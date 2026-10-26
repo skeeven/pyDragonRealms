@@ -118,7 +118,10 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0) -> dict:
     finished = 0
     components: dict[str, Counter[str]] = {}
     for index in range(games):
-        result = play_game(players, seed + index)
+        rotation = index % players
+        lineup = tuple(STRATEGIES[(seat + rotation) % len(STRATEGIES)]
+                       for seat in range(players))
+        result = play_game(players, seed + index, lineup)
         finished += 1
         for pid, score in result.scores.items():
             strategy = result.strategies[pid]
@@ -127,21 +130,23 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0) -> dict:
                 result.breakdowns[pid])
         for winner in result.winners:
             wins[result.strategies[winner]] += 1 / len(result.winners)
-    counts = Counter(
-        STRATEGIES[i % len(STRATEGIES)] for i in range(players))
+    counts = Counter()
+    for index in range(games):
+        for seat in range(players):
+            counts[STRATEGIES[(seat + index % players) % len(STRATEGIES)]] += 1
     return {
         "games": finished,
         "players": players,
         "seed": seed,
         "strategies": {
             strategy: {
-                "appearances": games * count,
+                "appearances": count,
                 "wins": round(wins[strategy], 3),
-                "win_rate": round(wins[strategy] / (games * count), 4),
+                "win_rate": round(wins[strategy] / count, 4),
                 "average_score": round(
-                    total_scores[strategy] / (games * count), 2),
+                    total_scores[strategy] / count, 2),
                 "average_components": {
-                    k: round(v / (games * count), 2)
+                    k: round(v / count, 2)
                     for k, v in sorted(components.get(strategy, {}).items())
                 },
             }
