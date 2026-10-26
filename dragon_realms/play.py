@@ -56,6 +56,60 @@ def choose(prompt: str, maximum: int, allow_zero: bool = True,
         print("Choice out of range.")
 
 
+def affordable(resources, cost) -> bool:
+    return all(resources.get(key, 0) >= amount for key, amount in cost.items())
+
+
+def cost_text(cost) -> str:
+    return ", ".join(f"{amount} {key}" for key, amount in cost.items()
+                     if amount) or "free"
+
+
+def advice(game: Game, pid: str) -> None:
+    """Explain immediate opportunities, not a guaranteed optimal move."""
+    player = game.players[pid]
+    print("\\nYOUR OPTIONS — why they matter:")
+    quests = list(quest_options(game, pid))
+    if quests:
+        best = max(quests, key=lambda option: option[2])
+        print(f"  QUEST: {game.cards[best[0].card_id].name} is achievable "
+              f"for +{best[2]} prestige this round.")
+    else:
+        print("  QUEST: None achievable yet. Deploy stronger or varied dragons.")
+    available = [b for b in game.blueprints if
+                 affordable(player.resources, game.cards[b.card_id].cost)]
+    if available and len(player.buildings) < 3:
+        target = max(available, key=lambda b: game.cards[b.card_id].prestige)
+        print(f"  BUILD: {game.cards[target.card_id].name} is affordable "
+              "and scores points immediately.")
+    bond_costs = ({"ember": 2}, {"ember": 2, "aether": 1},
+                  {"ember": 3, "aether": 2})
+    if any(d.bond < 3 and affordable(player.resources, bond_costs[d.bond])
+           for d in player.deployed):
+        print("  BOND: Strengthens a dragon for future quests; "
+              "bond levels 2 and 3 also earn prestige.")
+    if game.round == 6:
+        print("  FINAL ROUND: Unspent resources do not score. "
+              "Favor actions that earn prestige now.")
+    else:
+        print("  CHANNEL: Gain resources to afford future buildings, "
+              "bonds or market bids.")
+
+
+def auction_feedback(game: Game, pid: str, previous_reserve: set,
+                     previous_relics: set, previous_crystal: int) -> None:
+    player = game.players[pid]
+    acquired = [item for item in player.reserve + player.relics
+                if item.uid not in previous_reserve | previous_relics]
+    print("\\nAUCTION RESULTS")
+    if acquired:
+        for item in acquired:
+            print(f"  WON: {describe(game, item)}")
+    else:
+        print("  No cards won this round.")
+    print(f"  Crystal spent: {previous_crystal - player.resources['crystal']}")
+    print("  Dragons won enter your reserve; deploy one to use it.")
+
 def human_market(game: Game, pid: str, input_fn=input) -> None:
     print("\nMARKET — sealed bids; minimum 2 Crystal for dragons,"
           " 3 for relics. Zero skips a card.")
@@ -64,11 +118,17 @@ def human_market(game: Game, pid: str, input_fn=input) -> None:
     for n, item in enumerate(game.market, 1):
         minimum = 3 if game.cards[item.card_id].kind == "relic" else 2
         print(f" {n}. {describe(game, item)}")
-        amount = choose(f"Bid (0 or {minimum}-{remaining}): ",
-                        remaining, input_fn=input_fn)
-        if 0 < amount < minimum:
-            print("Below minimum; skipping.")
+        if remaining < minimum:
+            print(f"  Cannot bid: need {minimum} Crystal; only {remaining} left.")
             continue
+        print("  Higher bids improve your chance of winning, but reserve"
+              " Crystal for later cards.")
+        while True:
+            amount = choose(f"Bid (0 skip, {minimum}-{remaining}): ",
+                            remaining, input_fn=input_fn)
+            if amount == 0 or amount >= minimum:
+                break
+            print(f"  Minimum bid is {minimum}; try again or enter 0.")
         if amount:
             bids[item.uid] = amount
             remaining -= amount
@@ -103,11 +163,11 @@ def human_action(game: Game, pid: str, input_fn=input) -> None:
     player = game.players[pid]
     print(f"\nACTIONS — {player.actions_left} remaining")
     print(" 1. Channel two resources")
-    print(" 2. Bond with a deployed dragon")
-    print(" 3. Recruit a dragon from the deck")
-    print(" 4. Meditate (draw two, keep one)")
-    print(" 5. Build a sanctuary")
-    print(" 6. Complete a quest")
+    print(" 2. Bond with a deployed dragon (cost: 2 Ember at level 0;"\n          " 2 Ember + 1 Aether at level 1;"\n          " 3 Ember + 2 Aether at level 2)")
+    next_dragon = (game.cards[game.decks["dragon"][-1]]\n                   if game.decks["dragon"] else None)\n    recruit_cost = next_dragon.cost if next_dragon else {}\n    print(f" 3. Recruit a dragon (cost: {cost_text(recruit_cost)};"\n          " card enters reserve)")
+    print(" 4. Meditate (cost: 2 Crystal; randomly draw two, keep one)")
+    print(" 5. Build a sanctuary (cost varies; permanent prestige/effects)")
+    print(" 6. Complete a quest (use ready dragons; gain prestige/resources)")
     print(" 7. Show status")
     action = choose("Action: ", 7, allow_zero=False, input_fn=input_fn)
     if action == 7:
@@ -209,7 +269,7 @@ def play(seed: int = 0, tutorial: bool = True, input_fn=input) -> Game:
     for pid, score in sorted(game.scores().items(),
                              key=lambda entry: -entry[1]):
         print(f"{pid}: {score} prestige | {score_breakdown(game, pid)}")
-    print("Winner(s):", ", ".join(game.winners()))
+    print("Winner(s):", ", ".join(game.winners()))\n    print("Scores reflect quests, deployed dragons, bonds, buildings,"\n          " relics and elemental synergy. Reserve dragons do not score.")
     return game
 
 
