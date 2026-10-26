@@ -10,7 +10,8 @@ from collections import Counter
 from dataclasses import dataclass
 from random import Random
 
-from .engine import Game, Phase, RuleError
+from .engine import Game, Phase
+from .bots import choose_action, deploy_best, score_breakdown
 
 STRATEGIES = ("balanced", "collector", "bonding", "builder")
 
@@ -22,6 +23,7 @@ class Result:
     winners: list[str]
     strategies: dict[str, str]
     events: list[dict]
+    breakdowns: dict[str, dict[str, int]]
 
 
 def _bid(game: Game, pid: str, strategy: str, rng: Random) -> None:
@@ -97,26 +99,14 @@ def play_game(players: int = 4, seed: int = 0,
         game.begin_actions()
         for pid in game.priority():
             player = game.players[pid]
-            if player.reserve and not player.swapped:
-                if len(player.deployed) < 5:
-                    game.deploy(pid, player.reserve[0].uid)
-                else:
-                    candidate = max(
-                        player.reserve,
-                        key=lambda d: game.cards[d.card_id].prestige)
-                    weakest = min(
-                        player.deployed,
-                        key=lambda d: game.cards[d.card_id].prestige)
-                    if (game.cards[candidate.card_id].prestige >
-                            game.cards[weakest.card_id].prestige and
-                            not weakest.exhausted):
-                        game.deploy(pid, candidate.uid, weakest.uid)
+            deploy_best(game, pid)
             while player.actions_left:
-                _try_action(game, pid, assignments[pid])
+                choose_action(game, pid, assignments[pid])
         game.end_round()
     assert game.phase == Phase.FINISHED
     return Result(seed, game.scores(), game.winners(),
-                  assignments, list(game.events))
+                  assignments, list(game.events),
+                  {pid: score_breakdown(game, pid) for pid in ids})
 
 
 def simulate(games: int = 100, players: int = 4, seed: int = 0) -> dict:
@@ -126,12 +116,15 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0) -> dict:
     wins: Counter[str] = Counter()
     total_scores: Counter[str] = Counter()
     finished = 0
+    components: dict[str, Counter[str]] = {}
     for index in range(games):
         result = play_game(players, seed + index)
         finished += 1
         for pid, score in result.scores.items():
             strategy = result.strategies[pid]
             total_scores[strategy] += score
+            components.setdefault(strategy, Counter()).update(
+                result.breakdowns[pid])
         for winner in result.winners:
             wins[result.strategies[winner]] += 1 / len(result.winners)
     counts = Counter(
@@ -147,6 +140,10 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0) -> dict:
                 "win_rate": round(wins[strategy] / (games * count), 4),
                 "average_score": round(
                     total_scores[strategy] / (games * count), 2),
+                "average_components": {
+                    k: round(v / (games * count), 2)
+                    for k, v in sorted(components.get(strategy, {}).items())
+                },
             }
             for strategy, count in counts.items()
         },
@@ -168,6 +165,7 @@ def main() -> None:
         print(json.dumps({
             "scores": result.scores, "winners": result.winners,
             "strategies": result.strategies, "events": result.events,
+            "breakdowns": result.breakdowns,
         }, indent=2, default=str))
     else:
         print(json.dumps(simulate(args.games, args.players, args.seed),
