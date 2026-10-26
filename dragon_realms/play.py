@@ -68,7 +68,7 @@ def cost_text(cost) -> str:
 def advice(game: Game, pid: str) -> None:
     """Explain immediate opportunities, not a guaranteed optimal move."""
     player = game.players[pid]
-    print("\\nYOUR OPTIONS — why they matter:")
+    print("\nYOUR OPTIONS — why they matter:")
     quests = list(quest_options(game, pid))
     if quests:
         best = max(quests, key=lambda option: option[2])
@@ -101,7 +101,7 @@ def auction_feedback(game: Game, pid: str, previous_reserve: set,
     player = game.players[pid]
     acquired = [item for item in player.reserve + player.relics
                 if item.uid not in previous_reserve | previous_relics]
-    print("\\nAUCTION RESULTS")
+    print("\nAUCTION RESULTS")
     if acquired:
         for item in acquired:
             print(f"  WON: {describe(game, item)}")
@@ -163,8 +163,14 @@ def human_action(game: Game, pid: str, input_fn=input) -> None:
     player = game.players[pid]
     print(f"\nACTIONS — {player.actions_left} remaining")
     print(" 1. Channel two resources")
-    print(" 2. Bond with a deployed dragon (cost: 2 Ember at level 0;"\n          " 2 Ember + 1 Aether at level 1;"\n          " 3 Ember + 2 Aether at level 2)")
-    next_dragon = (game.cards[game.decks["dragon"][-1]]\n                   if game.decks["dragon"] else None)\n    recruit_cost = next_dragon.cost if next_dragon else {}\n    print(f" 3. Recruit a dragon (cost: {cost_text(recruit_cost)};"\n          " card enters reserve)")
+    print(" 2. Bond with a deployed dragon (cost: 2 Ember at level 0;"
+          " 2 Ember + 1 Aether at level 1;"
+          " 3 Ember + 2 Aether at level 2)")
+    next_dragon = (game.cards[game.decks["dragon"][-1]]
+                   if game.decks["dragon"] else None)
+    recruit_cost = next_dragon.cost if next_dragon else {}
+    print(f" 3. Recruit a dragon (cost: {cost_text(recruit_cost)};"
+          " card enters reserve)")
     print(" 4. Meditate (cost: 2 Crystal; randomly draw two, keep one)")
     print(" 5. Build a sanctuary (cost varies; permanent prestige/effects)")
     print(" 6. Complete a quest (use ready dragons; gain prestige/resources)")
@@ -269,7 +275,9 @@ def play(seed: int = 0, tutorial: bool = True, input_fn=input) -> Game:
     for pid, score in sorted(game.scores().items(),
                              key=lambda entry: -entry[1]):
         print(f"{pid}: {score} prestige | {score_breakdown(game, pid)}")
-    print("Winner(s):", ", ".join(game.winners()))\n    print("Scores reflect quests, deployed dragons, bonds, buildings,"\n          " relics and elemental synergy. Reserve dragons do not score.")
+    print("Winner(s):", ", ".join(game.winners()))
+    print("Scores reflect quests, deployed dragons, bonds, buildings,"
+          " relics and elemental synergy. Reserve dragons do not score.")
     return game
 
 
