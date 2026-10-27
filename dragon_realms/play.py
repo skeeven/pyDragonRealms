@@ -139,7 +139,7 @@ def human_deploy(game: Game, pid: str, input_fn=input) -> None:
     player = game.players[pid]
     if not player.reserve:
         return
-    print("\nDEPLOY — one deployment or swap per round (optional).")
+    print("\nDEPLOY — reserve dragons do not score until deployed.")
     for n, item in enumerate(player.reserve, 1):
         print(f" {n}. {describe(game, item)}")
     selected = choose("Reserve dragon to deploy (0 skip): ",
@@ -156,12 +156,26 @@ def human_deploy(game: Game, pid: str, input_fn=input) -> None:
     replaced = choose("Replace (0 cancel): ", len(player.deployed),
                       input_fn=input_fn)
     if replaced:
-        game.deploy(pid, incoming.uid, player.deployed[replaced - 1].uid)
+        before = game.score(pid)
+        outgoing = player.deployed[replaced - 1]
+        player.deployed.remove(outgoing)
+        player.deployed.append(incoming)
+        after = game.score(pid)
+        player.deployed.remove(incoming)
+        player.deployed.append(outgoing)
+        delta = after - before
+        print(f"  Predicted score change: {delta:+d} prestige. "
+              "This includes elemental synergy and existing bonds.")
+        confirmation = choose("Confirm swap? (1 yes, 0 cancel): ", 1,
+                              input_fn=input_fn)
+        if confirmation:
+            game.deploy(pid, incoming.uid, outgoing.uid)
 
 
 def human_action(game: Game, pid: str, input_fn=input) -> None:
     player = game.players[pid]
     print(f"\nACTIONS — {player.actions_left} remaining")
+    advice(game, pid)
     print(" 1. Channel two resources")
     print(" 2. Bond with a deployed dragon (cost: 2 Ember at level 0;"
           " 2 Ember + 1 Aether at level 1;"
@@ -191,7 +205,13 @@ def human_action(game: Game, pid: str, input_fn=input) -> None:
         game.act(pid, "channel", gains=gains)
     elif action == 2:
         for n, item in enumerate(player.deployed, 1):
-            print(f" {n}. {describe(game, item)} | bond {item.bond}")
+            costs = ({"ember": 2}, {"ember": 2, "aether": 1},
+                     {"ember": 3, "aether": 2})
+            cost = costs[min(item.bond, 2)]
+            status = "MAX BOND" if item.bond >= 3 else (
+                "AFFORDABLE" if affordable(player.resources, cost) else "NOT AFFORDABLE")
+            print(f" {n}. {describe(game, item)} | bond {item.bond}"
+                  f" | next: {cost_text(cost)} ({status})")
         n = choose("Dragon (0 cancel): ", len(player.deployed),
                    input_fn=input_fn)
         if n:
@@ -203,7 +223,9 @@ def human_action(game: Game, pid: str, input_fn=input) -> None:
         game.act(pid, "meditate", keep=n - 1)
     elif action == 5:
         for n, item in enumerate(game.blueprints, 1):
-            print(f" {n}. {describe(game, item)}")
+            cost = game.cards[item.card_id].cost
+            status = "AFFORDABLE" if affordable(player.resources, cost) else "NOT AFFORDABLE"
+            print(f" {n}. {describe(game, item)} | {status}")
         n = choose("Building (0 cancel): ", len(game.blueprints),
                    input_fn=input_fn)
         if n:
@@ -246,9 +268,11 @@ def play(seed: int = 0, tutorial: bool = True, input_fn=input) -> Game:
         human_market(game, human, input_fn)
         for bot in bots:
             _bid(game, bot, strategies[bot], rng)
+        old_reserve = {item.uid for item in game.players[human].reserve}
+        old_relics = {item.uid for item in game.players[human].relics}
+        old_crystal = game.players[human].resources["crystal"]
         game.resolve_market()
-        print("\nMarket results:")
-        print("Your reserve and relics have been updated.")
+        auction_feedback(game, human, old_reserve, old_relics, old_crystal)
         # Bot trading is not implemented; do not offer fake negotiations.
         game.begin_actions()
         for bot in bots:
