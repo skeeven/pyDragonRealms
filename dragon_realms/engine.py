@@ -26,6 +26,15 @@ ELEMENTS = ("Flame", "Tide", "Grove", "Storm", "Stone", "Shadow")
 RESOURCES = ("crystal", "ember", "aether")
 CAP = 20
 
+DRAGON_ABILITIES = {
+    "produce:ember": "Flame: produces 1 Ember each round.",
+    "produce:crystal": "Tide: produces 1 Crystal each round.",
+    "produce:aether": "Grove: produces 1 Aether each round.",
+    "storm_boost": "Storm: +1 quest power when assigned.",
+    "stone_guard": "Stone: +1 permanent prestige while deployed.",
+    "shadow_bonus": "Shadow: +1 prestige when used on a quest.",
+}
+
 
 @dataclass(frozen=True)
 class Card:
@@ -419,7 +428,11 @@ class Game:
             if any(dragon.exhausted for dragon in dragons):
                 raise RuleError("Dragon already used for a quest")
             quest = self.cards[item.card_id]
-            power = sum(self.cards[d.card_id].power + d.bond for d in dragons)
+            power = sum(
+                self.cards[d.card_id].power + d.bond
+                + int(self.cards[d.card_id].effect == "storm_boost")
+                for d in dragons
+            )
             if any(self.cards[b.card_id].effect == "quest_power"
                    for b in player.buildings):
                 power += 1
@@ -434,7 +447,13 @@ class Game:
                 raise RuleError("Quest requirements not met")
             for dragon in dragons:
                 dragon.exhausted = True
-            player.quest_prestige += quest.reward.get("prestige", 0)
+            shadow_bonus = sum(
+                self.cards[d.card_id].effect == "shadow_bonus"
+                for d in dragons
+            )
+            player.quest_prestige += (
+                quest.reward.get("prestige", 0) + shadow_bonus
+            )
             player.quests_completed += 1
             self._grant(player, {k: v for k, v in quest.reward.items()
                                  if k in RESOURCES})
@@ -475,8 +494,11 @@ class Game:
 
     def score(self, pid: str) -> int:
         player = self._player(pid)
-        dragons = sum(self.cards[d.card_id].prestige + (0, 0, 1, 3)[d.bond]
-                      for d in player.deployed)
+        dragons = sum(
+            self.cards[d.card_id].prestige + (0, 0, 1, 3)[d.bond]
+            + int(self.cards[d.card_id].effect == "stone_guard")
+            for d in player.deployed
+        )
         buildings = sum(self.cards[b.card_id].prestige for b in player.buildings)
         buildings += sum(min(5, len(player.deployed))
                          for b in player.buildings
@@ -548,7 +570,10 @@ def make_catalog() -> dict[str, Card]:
             power = 1 + index % 5
             effect = ("produce:ember" if element == "Flame" else
                       "produce:crystal" if element == "Tide" else
-                      "produce:aether" if element == "Grove" else "")
+                      "produce:aether" if element == "Grove" else
+                      "storm_boost" if element == "Storm" else
+                      "stone_guard" if element == "Stone" else
+                      "shadow_bonus")
             cards[key] = Card(key, "dragon", f"{element} Wyrm {index + 1}",
                               element, power, 1 + index % 4,
                               {"crystal": 2 + power}, effect)
