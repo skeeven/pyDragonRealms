@@ -89,8 +89,24 @@ def test_round_trip_after_game_finished():
         game.end_round()
     restored = import_game(export_game(game))
     assert restored.phase == Phase.FINISHED
+    assert list(restored.players) == list(game.players)
+    assert restored.order == game.order
     assert restored.winners() == game.winners()
     assert restored.scores() == game.scores()
+
+
+def test_restored_tied_winners_keep_original_player_order():
+    """Turn priority must not reorder tied winners on load."""
+    game = make_match()
+    for _ in range(game.max_rounds):
+        to_actions(game)
+        game.end_round()
+
+    assert len(game.winners()) == len(game.players)
+    restored = import_game(export_game(game))
+    assert restored.winners() == game.winners()
+    assert list(restored.players) == list(game.players)
+    assert restored.order == game.order
 
 
 def test_reject_invalid_json_and_wrong_version():
