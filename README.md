@@ -48,6 +48,27 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Compact market and board (v0.16)
+
+The market has a compact 2×2 grid of illustrated auction tiles. The
+**Resolve auction** button now sits **above** the cards, so it remains
+accessible even when the page is too short to show the complete grid.
+Each tile shows dragon art, element, power, prestige, and a short ability
+description. Bids still accept zero (pass) or the normal minimum of
+2 Crystal for dragons and 3 for relics.
+
+The five-slot dragon board is slightly shorter, resource metrics use less
+padding, and the page starts closer to the top of the screen. Gameplay,
+auction rules, strategy simulation, and save file compatibility are
+unchanged.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Elemental dragon artwork and card styling (v0.15)
 
 The Streamlit game now renders original, self-contained SVG illustrations
