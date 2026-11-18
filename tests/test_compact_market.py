@@ -21,8 +21,12 @@ def calls_named(node, method_name):
     return [
         child for child in ast.walk(node)
         if isinstance(child, ast.Call)
-        and isinstance(child.func, ast.Attribute)
-        and child.func.attr == method_name
+        and (
+            (isinstance(child.func, ast.Attribute)
+             and child.func.attr == method_name)
+            or (isinstance(child.func, ast.Name)
+                and child.func.id == method_name)
+        )
     ]
 
 
