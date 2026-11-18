@@ -18,15 +18,12 @@ from .engine import (
     Instance,
     Phase,
     Player,
-    RuleError,
     Trade,
     make_catalog,
 )
 
 SAVE_VERSION = 1
 MAX_SAVE_BYTES = 1_000_000
-ZONES = ("deployed", "reserve", "buildings", "relics")
-BOARD_ZONES = ("market", "blueprints", "quests")
 DECK_KINDS = ("dragon", "relic", "building", "quest")
 
 
@@ -63,7 +60,9 @@ def _instance(data: Any, catalog: dict, kind: str) -> Instance:
     card_id = data.get("card_id")
     if not isinstance(uid, str) or not 1 <= len(uid) <= 128:
         raise ValueError("Invalid saved card identifier")
-    if card_id not in catalog or catalog[card_id].kind != kind:
+    if (not isinstance(card_id, str)
+            or card_id not in catalog
+            or catalog[card_id].kind != kind):
         raise ValueError("Saved card has the wrong type")
     bond = data.get("bond", 0)
     exhausted = data.get("exhausted", False)
@@ -213,11 +212,11 @@ def import_game(raw: str | bytes) -> Game:
         if not isinstance(item, dict):
             raise ValueError("Invalid saved market")
         card_id = item.get("card_id")
-        if card_id not in catalog:
+        if (not isinstance(card_id, str)
+                or card_id not in catalog
+                or catalog[card_id].kind not in ("dragon", "relic")):
             raise ValueError("Invalid market card")
         game.market.extend(zone([item], catalog[card_id].kind, 1))
-    if len(game.market) > 4:
-        raise ValueError("Invalid market size")
     game.blueprints = zone(data.get("blueprints"), "building", 3)
     game.quests = zone(data.get("quests"), "quest", 3)
 
