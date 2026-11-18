@@ -5,6 +5,7 @@ Run with: streamlit run app.py
 from __future__ import annotations
 
 from random import Random
+from secrets import randbelow
 
 import streamlit as st
 
@@ -623,10 +624,15 @@ def victory_screen(game: Game) -> None:
             use_container_width=True,
         )
         st.bar_chart(
-            {
-                entry["warden"]: entry["total"]
+            [
+                {
+                    "Warden": entry["warden"],
+                    "Prestige": entry["total"],
+                }
                 for entry in rankings
-            },
+            ],
+            x="Warden",
+            y="Prestige",
             horizontal=True,
         )
     with history_tab:
@@ -660,8 +666,6 @@ def victory_screen(game: Game) -> None:
 
     st.divider()
     if st.button("🐉 Play another match", type="primary"):
-        from secrets import randbelow
-
         start_game(randbelow(1_000_000), game.max_rounds)
         st.rerun()
 
