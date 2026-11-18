@@ -174,7 +174,10 @@ def import_game(raw: str | bytes) -> Game:
             seen.add(item.uid)
         return cards
 
-    for pid in order:
+    # Preserve original player insertion order, which controls the
+    # display order of tied winners. game.order is separately shuffled
+    # for turn priority and must not replace this ordering.
+    for pid in players_data:
         pdata = players_data[pid]
         if not isinstance(pdata, dict) or pdata.get("id") != pid:
             raise ValueError("Invalid saved player")
