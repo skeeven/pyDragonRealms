@@ -22,7 +22,7 @@ Play an eight-round match by default against three computer Wardens
 using a visual scoreboard, sealed auctions, deployment, quest and building
 actions, and contextual suggestions. The game runs in Streamlit session
 state; export a JSON save before closing the browser if you want to resume.
-Individual-card art and proper reveal-and-choose meditation are future work.
+Detailed hand-painted card art and proper reveal-and-choose meditation are future work.
 
 ## Adaptive opponents and action diagnostics (v0.12)
 
@@ -47,6 +47,36 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 33.5%, Bonding 33.5%, Collector 24%, and Builder 9% wins. Builder's
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
+
+## Dragon Codex and individual identities (v0.17)
+
+Every nonstarter dragon has a unique **name and short lore entry**.
+Card definitions retain the original IDs, power, prestige, cost, and
+elemental abilities; this is a collectible and visual update, not a
+balance change. The six families now each have eight individual crest
+and scale variations generated from the existing SVG artwork.
+
+Open **Dragon Codex** beneath the active dragon board. Choose an
+element to browse its eight entries. The Codex distinguishes:
+
+- **Owned**: presently deployed or in your reserve.
+- **Discovered**: previously acquired in the current match.
+- **Unknown**: not yet acquired, with details hidden.
+
+Discovered entries show their name, lore, and card statistics. New
+auction, recruitment, and meditation events record card identifiers
+so discoveries remain tracked during a match and across save/load.
+Older save files remain readable; where older event history lacks
+card identifiers, any currently held dragons still count as owned.
+This first Codex tracks **one match**, not a permanent account-wide
+collection spanning different matches.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
 
 ## Final layout polish (v0.16.1)
 
