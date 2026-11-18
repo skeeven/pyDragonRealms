@@ -20,6 +20,7 @@ from dragon_realms.engine import (
     Phase,
     RuleError,
 )
+from dragon_realms.history import leaderboard, match_history
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
 
@@ -570,6 +571,101 @@ def finish_round(game: Game) -> None:
     st.rerun()
 
 
+def victory_screen(game: Game) -> None:
+    """Celebrate the result and show a compact detailed match recap."""
+    rankings = leaderboard(game)
+    winners = game.winners()
+    if HUMAN in winners:
+        st.success("🏆 Victory! Your realm reigns supreme!")
+    else:
+        st.info(f"🏆 Victory goes to {', '.join(winners)}")
+    if len(winners) > 1:
+        st.caption("The leading Wardens share first place.")
+
+    top = st.columns(min(4, len(rankings)), gap="small")
+    for column, item in zip(top, rankings):
+        with column:
+            medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(
+                item["rank"], "🛡️"
+            )
+            st.metric(
+                f"{medal} #{item['rank']} {item['warden']}",
+                item["total"],
+                help=(
+                    f"{item['quests_completed']} quests completed"
+                ),
+            )
+
+    breakdown_tab, history_tab = st.tabs([
+        "📊 Final scoring", "📜 Match history",
+    ])
+    with breakdown_tab:
+        st.caption(
+            "Rank ties are resolved by completed quests, total "
+            "bond levels, then remaining Crystal."
+        )
+        st.dataframe(
+            [
+                {
+                    "Rank": entry["rank"],
+                    "Warden": entry["warden"],
+                    "Quests": entry["quests"],
+                    "Dragons": entry["dragons"],
+                    "Bonds": entry["bonds"],
+                    "Buildings": entry["buildings"],
+                    "Relics": entry["relics"],
+                    "Synergy": entry["synergy"],
+                    "Total": entry["total"],
+                }
+                for entry in rankings
+            ],
+            hide_index=True,
+            use_container_width=True,
+        )
+        st.bar_chart(
+            {
+                entry["warden"]: entry["total"]
+                for entry in rankings
+            },
+            horizontal=True,
+        )
+    with history_tab:
+        history = match_history(game)
+        if history:
+            st.caption(
+                f"{len(history)} recorded highlights across "
+                f"{game.max_rounds} rounds."
+            )
+            rounds = ["All", *range(1, game.max_rounds + 1)]
+            selected = st.selectbox(
+                "Round", rounds, key="history_round"
+            )
+            filtered = [
+                item for item in history
+                if selected == "All" or item["round"] == selected
+            ]
+            st.dataframe(
+                [
+                    {
+                        "Round": item["round"],
+                        "Event": item["event"],
+                    }
+                    for item in filtered
+                ],
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption("No recorded highlights are available.")
+
+    st.divider()
+    if st.button("🐉 Play another match", type="primary"):
+        from secrets import randbelow
+
+        start_game(randbelow(1_000_000), game.max_rounds)
+        st.rerun()
+
+
 def main() -> None:
     """Render a compact, guided, session-local game board."""
     with st.sidebar:
@@ -676,18 +772,7 @@ def main() -> None:
         st.caption(f"ℹ️ {notice}")
 
     if game.phase == Phase.FINISHED:
-        st.success(
-            f"Game over! Winner: {', '.join(game.winners())}"
-        )
-        st.dataframe(
-            [
-                dict(Warden=pid, **score_breakdown(game, pid),
-                     Total=game.score(pid))
-                for pid in game.players
-            ],
-            hide_index=True,
-            use_container_width=True,
-        )
+        victory_screen(game)
         return
 
     board, decisions = st.columns([1.25, 1], gap="medium")
