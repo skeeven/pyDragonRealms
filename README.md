@@ -22,7 +22,7 @@ Play an eight-round match by default against three computer Wardens
 using a visual scoreboard, sealed auctions, deployment, quest and building
 actions, and contextual suggestions. The game runs in Streamlit session
 state; export a JSON save before closing the browser if you want to resume.
-Full card art and proper reveal-and-choose meditation are future work.
+Individual-card art and proper reveal-and-choose meditation are future work.
 
 ## Adaptive opponents and action diagnostics (v0.12)
 
@@ -47,6 +47,30 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 33.5%, Bonding 33.5%, Collector 24%, and Builder 9% wins. Builder's
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
+
+## Elemental dragon artwork and card styling (v0.15)
+
+The Streamlit game now renders original, self-contained SVG illustrations
+for all six elemental dragon families: Flame, Tide, Grove, Storm, Stone,
+and Shadow. They share a recognizable dragon silhouette, with unique
+background sigils and color palettes for quick identification.
+
+Illustrations appear in the five deployed dragon slots, reserve cards,
+and market dragon listings. The cards remain small enough to fit a
+single-screen game layout; exhausted dragons are dimmed. The artwork
+is defined in `dragon_realms/artwork.py` and requires no network access,
+third-party image hosting, or binary image files.
+
+This is a stylized first artwork pass rather than individual art for
+all 48 nonstarter dragon cards. Artwork changes do not alter gameplay,
+scoring, or the v0.13 save format.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
 
 ## Victory and match history (v0.14)
 
