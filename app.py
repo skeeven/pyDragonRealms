@@ -8,6 +8,7 @@ from random import Random
 
 import streamlit as st
 
+from dragon_realms.advisor import chapter, quest_previews, recommendation
 from dragon_realms.bots import (
     choose_action,
     deploy_best,
@@ -351,58 +352,64 @@ def action_screen(game: Game) -> None:
             player.resources, BOND_COSTS[item.bond]
         )
     ]
-    if quests:
-        best = quests[0]
-        st.success(
-            f"Recommended: Complete {label(game, best[0])} "
-            f"for **+{best[2]} prestige**."
-        )
-    elif buildings:
-        best = max(
-            buildings,
-            key=lambda item: game.cards[item.card_id].prestige,
-        )
-        st.info(
-            f"Consider building {label(game, best)} "
-            "for immediate prestige."
-        )
-    elif game.round < game.max_rounds:
-        st.info(
-            "No immediate quest or affordable building. "
-            "Gather resources for next round or strengthen a dragon."
-        )
-    else:
-        st.warning(
-            "Final round: unspent resources earn no prestige. "
-            "Look for a scoring action."
-        )
+    guide = recommendation(game, HUMAN)
+    st.info(
+        f"**🧙 Warden advisor · {guide['title']}**"
+        f" — {guide['reason']}"
+    )
     tabs = st.tabs([
         "🗺️ Quests", "🏰 Build", "🤝 Bond",
         "💎 Channel", "🐉 Recruit", "✨ Meditate",
     ])
     with tabs[0]:
-        st.write(
-            "Quests earn prestige immediately. Dragons used "
-            "for a quest are exhausted until the next round."
+        st.caption(
+            "Quest = one action. Selected dragons become exhausted "
+            "for the rest of this round, but recover next round."
         )
-        if not quests:
-            st.caption(
-                "No quest is achievable with your ready dragons."
+        previews = quest_previews(game, HUMAN)
+        for index, preview in enumerate(previews):
+            req = preview["requirement"]
+            requirements = [
+                f"Power {req.get('power', 0)}",
+                f"Element: {req['element']}"
+                if req.get("element") else "Any element",
+                f"{req['distinct']} different elements"
+                if req.get("distinct") else "No diversity requirement",
+            ]
+            st.markdown(
+                f"**{preview['name']}** · "
+                f"🏆 +{preview['prestige']} prestige"
             )
-        for index, (quest, dragons, reward) in enumerate(quests):
-            names = ", ".join(label(game, item) for item in dragons)
-            st.write(
-                f"**{label(game, quest)}** · +{reward} prestige "
-                f"· Use: {names}"
-            )
-            if st.button(
-                f"Complete quest #{index + 1}",
-                key=f"quest_{game.round}_{index}",
-            ):
-                perform(
-                    game, "quest", uid=quest.uid,
-                    dragons=[item.uid for item in dragons],
+            st.caption(" · ".join(requirements))
+            extra_rewards = {
+                key: value for key, value in preview["reward"].items()
+                if key != "prestige" and value
+            }
+            if extra_rewards:
+                st.caption(
+                    "Additional rewards: " + cost_label(extra_rewards)
                 )
+            if preview["ready"]:
+                st.caption(
+                    "✅ Ready team: "
+                    + ", ".join(preview["dragon_names"])
+                    + " · These dragons rest after the quest."
+                )
+                if st.button(
+                    f"Complete {preview['name']}",
+                    key=f"quest_{game.round}_{preview['uid']}",
+                ):
+                    perform(
+                        game, "quest",
+                        uid=preview["uid"],
+                        dragons=preview["dragon_uids"],
+                    )
+            else:
+                st.caption(
+                    "🔒 Not ready: " + " ".join(preview["reasons"])
+                )
+            if index < len(previews) - 1:
+                st.divider()
     with tabs[1]:
         st.write(
             "Buildings permanently improve your realm "
@@ -591,6 +598,7 @@ def main() -> None:
     st.caption(" · ".join(
         f"{pid}: {score}" for pid, score in scores
     ))
+    st.caption(chapter(game))
     notice = st.session_state.get("notice")
     if notice:
         st.caption(f"ℹ️ {notice}")
