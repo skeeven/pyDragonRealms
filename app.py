@@ -39,7 +39,9 @@ st.markdown(
     """
     <style>
     .block-container {max-width: 1500px; padding-top: 3.25rem;}
-    h1 {font-size: 1.65rem !important;}\n    .game-title {font-size: 1.65rem; font-weight: 750;\n        line-height: 1.3; margin: 0 0 0.4rem 0;}
+    h1 {font-size: 1.65rem !important;}
+    .game-title {font-size: 1.65rem; font-weight: 750;
+        line-height: 1.3; margin: 0 0 0.4rem 0;}
     div[data-testid="stVerticalBlock"] {gap: 0.45rem;}
     div[data-testid="stMetricValue"] {font-size: 1.45rem;}
     div[data-testid="stMetric"] {
@@ -564,7 +566,10 @@ def main() -> None:
     game = st.session_state.game
     player = game.players[HUMAN]
 
-    st.markdown(\n        '<div class="game-title">🐉 Dragon Realms</div>',\n        unsafe_allow_html=True,\n    )
+    st.markdown(
+        '<div class="game-title">🐉 Dragon Realms</div>',
+        unsafe_allow_html=True,
+    )
     st.progress(
         game.round / game.max_rounds,
         text=(f"Round {game.round}/{game.max_rounds} · "
