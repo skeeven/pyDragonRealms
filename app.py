@@ -11,13 +11,14 @@ from secrets import randbelow
 import streamlit as st
 
 from dragon_realms.advisor import chapter, quest_previews, recommendation
-from dragon_realms.artwork import PALETTES, dragon_svg
+from dragon_realms.artwork import PALETTES
+from dragon_realms.art_assets import dragon_art_html
 from dragon_realms.codex import (
     codex_entries,
     codex_summary,
     family_progress,
 )
-from dragon_realms.dragon_identity import dragon_lore, dragon_variant
+from dragon_realms.dragon_identity import dragon_lore
 from dragon_realms.bots import (
     choose_action,
     deploy_best,
@@ -79,7 +80,7 @@ st.markdown(
         align-items: center; justify-content: center; gap: 3px;
         overflow: hidden;
     }
-    .dragon-slot svg {
+    .dragon-slot svg, .dragon-slot img {
         display: block; width: min(100%, 120px);
         height: auto; max-height: 70px;
         filter: drop-shadow(0 3px 8px #0005);
@@ -98,7 +99,7 @@ st.markdown(
         align-items: center; margin: 0 8px 0 0;
         border-radius: 9px; overflow: hidden;
     }
-    .card-art svg {display: block;}
+    .card-art svg, .card-art img {display: block;}
     .element-key {font-size: .77rem; opacity: .9;}
     .market-card {
         border: 1px solid #35536a;
@@ -110,7 +111,7 @@ st.markdown(
         display: flex; align-items: center; gap: 8px;
     }
     .market-card-art {width: 62px; flex: 0 0 62px;}
-    .market-card-art svg {
+    .market-card-art svg, .market-card-art img {
         display: block; width: 62px; height: auto;
     }
     .market-card-body {min-width: 0; flex: 1;}
@@ -140,7 +141,9 @@ st.markdown(
         align-items: center; justify-content: center; gap: 3px;
         overflow: hidden;
     }
-    .codex-tile svg {display: block; max-width: 100%; height: auto;}
+    .codex-tile svg, .codex-tile img {
+        display: block; max-width: 100%; height: auto;
+    }
     .codex-tile strong {
         font-size: .68rem; line-height: 1.2;
         overflow-wrap: anywhere;
@@ -210,9 +213,7 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
             color = palette[0] if palette else "#46617a"
             tint = palette[3] if palette else "#142638"
             resting = " is-resting" if dragon.exhausted else ""
-            art = dragon_svg(
-                card.element, 112, dragon_variant(card.id)
-            )
+            art = dragon_art_html(card.id, card.element, 112)
             st.markdown(
                 f'<div class="dragon-slot{resting}" title="{title}" '
                 f'style="--dragon-line:{color};--dragon-tint:{tint}">'
@@ -268,7 +269,7 @@ def card_panel(game: Game, item, extra: str = "") -> None:
     card = game.cards[item.card_id]
     element = f" · {card.element}" if card.element else ""
     if card.kind == "dragon":
-        art = dragon_svg(card.element, 64, dragon_variant(card.id))
+        art = dragon_art_html(card.id, card.element, 64)
         st.markdown(
             f'<span class="card-art">{art}</span>'
             f'<strong>{escape(card.name)}</strong>',
@@ -301,9 +302,7 @@ def market_card_html(game: Game, item) -> str:
     card = game.cards[item.card_id]
     title = escape(card.name)
     if card.kind == "dragon":
-        artwork = dragon_svg(
-            card.element, 62, dragon_variant(card.id)
-        )
+        artwork = dragon_art_html(card.id, card.element, 62)
         metadata = (
             f"{escape(card.element)} · "
             f"⚔ {card.power} · 🏆 {card.prestige}"
@@ -375,7 +374,7 @@ def codex_screen(game: Game) -> None:
                     unsafe_allow_html=True,
                 )
                 continue
-            art = dragon_svg(family, 70, entry["variant"])
+            art = dragon_art_html(entry["card_id"], family, 70)
             st.markdown(
                 '<div class="codex-tile">'
                 f'{art}<strong>{escape(entry["name"])}</strong>'
@@ -405,7 +404,7 @@ def codex_screen(game: Game) -> None:
     art_col, info_col = st.columns([1, 2], gap="small")
     with art_col:
         st.markdown(
-            dragon_svg(family, 180, entry["variant"]),
+            dragon_art_html(selected, family, 180),
             unsafe_allow_html=True,
         )
     with info_col:
