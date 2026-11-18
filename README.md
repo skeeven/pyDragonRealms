@@ -24,6 +24,28 @@ contextual suggestions. The game lives in Streamlit session state; closing
 or resetting the session loses the match. Save/resume, full card art, and
 proper reveal-and-choose meditation are future work.
 
+## Strategy tuning (v0.11)
+
+The Builder bot estimates a building's **remaining-match value**, factoring
+in power bonuses for future quests, production from future gather phases,
+Warden Hall's deployed-dragon points, and construction cost. It can
+prioritize a useful early investment over a smaller immediate quest.
+Collector avoids spending actions to recruit when its five active slots
+are already filled.
+
+To compare against the 200-game eight-round v0.10 baseline, run:
+
+```bash
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m dragon_realms.simulate --players 4 --games 200 --rounds 8
+```
+
+Baseline from the previous run (same 200 seeds): Balanced 35.5% wins,
+Bonding 34.5%, Collector 22.5%, Builder 7.5%. Changes in win rates are
+not proof of perfect balance; compare mean prestige and its components.
+The bot heuristics changed, but card scoring rules did not.
+
 ## Smarter opponents and balance checks (v0.10)
 
 Bots now rank auction cards based on usefulness, deployment space, elemental
