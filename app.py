@@ -48,10 +48,12 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1500px; padding-top: 1.8rem;}
+    .block-container {max-width: 1500px; padding-top: 4rem;}
     h1 {font-size: 1.65rem !important;}
     .game-title {font-size: 1.65rem; font-weight: 750;
-        line-height: 1.3; margin: 0 0 0.4rem 0;}
+        line-height: 1.35; min-height: 2.25rem;
+        padding: 0.1rem 0; margin: 0 0 0.4rem 0;
+        position: relative; overflow: visible;}
     div[data-testid="stVerticalBlock"] {gap: 0.32rem;}
     div[data-testid="stMetricValue"] {font-size: 1.45rem;}
     div[data-testid="stMetric"] {
@@ -156,7 +158,8 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
     """Draw compact dragon slots instead of tall text panels."""
     if not slots:
         return
-    columns = st.columns(min(slots, 5), gap="small")
+    # All zones use five tracks so a single reserve card never stretches.
+    columns = st.columns(5, gap="small")
     for index in range(slots):
         with columns[index % len(columns)]:
             if index >= len(dragons):
@@ -499,35 +502,28 @@ def action_screen(game: Game) -> None:
         previews = quest_previews(game, HUMAN)
         for index, preview in enumerate(previews):
             req = preview["requirement"]
-            requirements = [
-                f"Power {req.get('power', 0)}",
-                f"Element: {req['element']}"
-                if req.get("element") else "Any element",
-                f"{req['distinct']} different elements"
-                if req.get("distinct") else "No diversity requirement",
-            ]
-            st.markdown(
-                f"**{preview['name']}** · "
-                f"🏆 +{preview['prestige']} prestige"
+            element = req.get("element") or "Any"
+            distinct = req.get("distinct", 0)
+            requirement = (
+                f"⚔ Power {req.get('power', 0)} · "
+                f"Element {element} · Distinct {distinct}"
             )
-            st.caption(" · ".join(requirements))
-            if preview["ready"]:
-                st.caption(
-                    "Listed prestige includes any Shadow bonuses."
-                )
-            extra_rewards = {
+            rewards = {
                 key: value for key, value in preview["reward"].items()
                 if key != "prestige" and value
             }
-            if extra_rewards:
-                st.caption(
-                    "Additional rewards: " + cost_label(extra_rewards)
-                )
+            reward_text = (
+                f" · 🎁 {cost_label(rewards)}" if rewards else ""
+            )
+            st.markdown(
+                f"**{preview['name']}** · "
+                f"🏆 +{preview['prestige']}"
+            )
+            st.caption(requirement + reward_text)
             if preview["ready"]:
                 st.caption(
-                    "✅ Ready team: "
-                    + ", ".join(preview["dragon_names"])
-                    + " · These dragons rest after the quest."
+                    "✅ " + ", ".join(preview["dragon_names"])
+                    + " · Dragons rest after quest."
                 )
                 if st.button(
                     f"Complete {preview['name']}",
@@ -540,7 +536,7 @@ def action_screen(game: Game) -> None:
                     )
             else:
                 st.caption(
-                    "🔒 Not ready: " + " ".join(preview["reasons"])
+                    "🔒 " + " ".join(preview["reasons"])
                 )
             if index < len(previews) - 1:
                 st.divider()
@@ -792,58 +788,57 @@ def main() -> None:
         if st.button("Start new game", type="primary"):
             start_game(int(seed), rounds)
             st.rerun()
-        st.divider()
-        st.subheader("Save and resume")
-        if "game" in st.session_state:
-            save_text = export_session(
-                st.session_state.game,
-                st.session_state.rng,
-                st.session_state.get("auction", []),
+        with st.expander("💾 Save and resume", expanded=False):
+            if "game" in st.session_state:
+                save_text = export_session(
+                    st.session_state.game,
+                    st.session_state.rng,
+                    st.session_state.get("auction", []),
+                )
+                st.download_button(
+                    "💾 Download saved game",
+                    data=save_text,
+                    file_name=(
+                        f"dragon-realms-round-"
+                        f"{st.session_state.game.round}.json"
+                    ),
+                    mime="application/json",
+                    use_container_width=True,
+                )
+            saved_file = st.file_uploader(
+                "Load a saved game (.json)",
+                type=["json"],
+                key="saved_game_upload",
             )
-            st.download_button(
-                "💾 Download saved game",
-                data=save_text,
-                file_name=(
-                    f"dragon-realms-round-"
-                    f"{st.session_state.game.round}.json"
-                ),
-                mime="application/json",
+            if st.button(
+                "Restore uploaded game",
+                disabled=saved_file is None,
                 use_container_width=True,
-            )
-        saved_file = st.file_uploader(
-            "Load a saved game (.json)",
-            type=["json"],
-            key="saved_game_upload",
-        )
-        if st.button(
-            "Restore uploaded game",
-            disabled=saved_file is None,
-            use_container_width=True,
-        ):
-            try:
-                game, rng, auction = import_session(
-                    saved_file.getvalue()
-                )
-                if set(game.players) != {HUMAN, *BOTS}:
-                    raise ValueError(
-                        "Save does not match this game's players"
+            ):
+                try:
+                    game, rng, auction = import_session(
+                        saved_file.getvalue()
                     )
-            except (ValueError, UnicodeError) as exc:
-                st.error(f"Could not restore game: {exc}")
-            else:
-                st.session_state.game = game
-                st.session_state.rng = rng
-                st.session_state.auction = auction
-                st.session_state.notice = (
-                    f"Restored round {game.round} of "
-                    f"{game.max_rounds}."
-                )
-                st.rerun()
-        st.caption(
-            "Save a JSON file to your computer and upload it "
-            "later to resume. An unsaved browser session can "
-            "still be lost."
-        )
+                    if set(game.players) != {HUMAN, *BOTS}:
+                        raise ValueError(
+                            "Save does not match this game's players"
+                        )
+                except (ValueError, UnicodeError) as exc:
+                    st.error(f"Could not restore game: {exc}")
+                else:
+                    st.session_state.game = game
+                    st.session_state.rng = rng
+                    st.session_state.auction = auction
+                    st.session_state.notice = (
+                        f"Restored round {game.round} of "
+                        f"{game.max_rounds}."
+                    )
+                    st.rerun()
+            st.caption(
+                "Save a JSON file to your computer and upload it "
+                "later to resume. An unsaved browser session can "
+                "still be lost."
+            )
         with st.expander("Rules overview"):
             st.write(
                 "Bid for cards, deploy dragons, then take two actions "
