@@ -1,9 +1,10 @@
 """Regression tests for v0.10 opponent decisions and match length."""
 
-from dragon_realms.engine import Game
-from dragon_realms.bots import deploy_best
-from dragon_realms.simulate import _bid, play_game, simulate
 from random import Random
+
+from dragon_realms.bots import deploy_best
+from dragon_realms.engine import Game
+from dragon_realms.simulate import _bid, play_game, simulate
 
 
 def test_eight_round_match_finishes():
