@@ -48,6 +48,27 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon Codex Gallery (v0.18)
+
+The Codex now shows **eight compact gallery tiles** per element in a
+four-column layout. Unknown dragons appear as small, locked silhouettes
+instead of repetitive text descriptions. Discovered dragons show their
+individual artwork and names, with a **View** button to open a larger
+illustration, lore, power, prestige, and ability.
+
+An elemental progress summary shows discoveries out of eight for all six
+families, and the selected family has its own progress bar. The Codex
+still tracks one match and uses the same card IDs and event history;
+saves from v0.17 remain compatible. The feature is display-only and
+does not affect auctions, quests, scoring, or simulations.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Dragon Codex and individual identities (v0.17)
 
 Every nonstarter dragon has a unique **name and short lore entry**.
