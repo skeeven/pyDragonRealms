@@ -205,8 +205,11 @@ def import_game(raw: str | bytes) -> Game:
             setattr(player, key, value)
         game.players[pid] = player
 
+    market_data = data.get("market")
+    if not isinstance(market_data, list) or len(market_data) > 4:
+        raise ValueError("Invalid saved market")
     game.market = []
-    for item in data.get("market", []):
+    for item in market_data:
         if not isinstance(item, dict):
             raise ValueError("Invalid saved market")
         card_id = item.get("card_id")
@@ -252,9 +255,42 @@ def import_game(raw: str | bytes) -> Game:
             raise ValueError("Saved bids exceed player's resources")
         game.bids[pid] = dict(offers)
 
-    if data.get("trades"):
-        raise ValueError("Pending trades cannot be restored")
+    trades = data.get("trades")
+    if not isinstance(trades, dict) or len(trades) > 30:
+        raise ValueError("Invalid saved trades")
     game.trades = {}
+    for tid, trade_data in trades.items():
+        if (not isinstance(tid, str)
+                or not isinstance(trade_data, dict)
+                or trade_data.get("id") != tid
+                or trade_data.get("proposer") not in game.players
+                or trade_data.get("recipient") not in game.players
+                or trade_data.get("proposer") == trade_data.get("recipient")):
+            raise ValueError("Invalid saved trade")
+        for side_name in ("give", "receive"):
+            side = trade_data.get(side_name)
+            if not isinstance(side, dict):
+                raise ValueError("Invalid saved trade contents")
+            if set(side) - {"resources", "cards"}:
+                raise ValueError("Invalid saved trade contents")
+            resources = side.get("resources", {})
+            cards = side.get("cards", [])
+            if (not isinstance(resources, dict)
+                    or set(resources) - set(RESOURCES)
+                    or not all(_valid_int(v, 0, CAP)
+                               for v in resources.values())
+                    or not isinstance(cards, list)
+                    or len(cards) > 9
+                    or not all(isinstance(uid, str) and uid in seen
+                               for uid in cards)):
+                raise ValueError("Invalid saved trade contents")
+        game.trades[tid] = Trade(
+            id=tid,
+            proposer=trade_data["proposer"],
+            recipient=trade_data["recipient"],
+            give=trade_data["give"],
+            receive=trade_data["receive"],
+        )
     version = data.get("game_version")
     events = data.get("events")
     if (not _valid_int(version, 0, 1_000_000)
@@ -271,3 +307,52 @@ def import_game(raw: str | bytes) -> Game:
     except (TypeError, ValueError, KeyError) as exc:
         raise ValueError("Invalid saved random state") from exc
     return game
+
+
+def export_session(game: Game, bot_rng: Random,
+                   auction: list[dict]) -> str:
+    """Export a portable Streamlit session, including bot RNG state."""
+    data = {
+        "format": "dragon-realms-session",
+        "version": SAVE_VERSION,
+        "game": json.loads(export_game(game)),
+        "bot_rng_state": _as_json_state(bot_rng.getstate()),
+        "auction": auction,
+    }
+    return json.dumps(data, indent=2, ensure_ascii=False)
+
+
+def import_session(raw: str | bytes) -> tuple[Game, Random, list[dict]]:
+    """Restore a session after validating it as portable JSON."""
+    if isinstance(raw, bytes):
+        if len(raw) > MAX_SAVE_BYTES:
+            raise ValueError("Save file is too large")
+        raw = raw.decode("utf-8")
+    if len(raw.encode("utf-8")) > MAX_SAVE_BYTES:
+        raise ValueError("Save file is too large")
+    try:
+        data = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Save file is not valid JSON") from exc
+    if (not isinstance(data, dict)
+            or data.get("format") != "dragon-realms-session"
+            or data.get("version") != SAVE_VERSION):
+        raise ValueError("Unsupported Dragon Realms session file")
+    game = import_game(json.dumps(data.get("game")))
+    rng = Random()
+    try:
+        rng.setstate(_as_tuple_state(data["bot_rng_state"]))
+    except (TypeError, ValueError, KeyError) as exc:
+        raise ValueError("Invalid saved bot random state") from exc
+    auction = data.get("auction")
+    if not isinstance(auction, list) or len(auction) > 100:
+        raise ValueError("Invalid saved auction history")
+    if not all(
+        isinstance(item, dict)
+        and isinstance(item.get("winner"), str)
+        and isinstance(item.get("card"), str)
+        and _valid_int(item.get("amount"), 0, CAP)
+        for item in auction
+    ):
+        raise ValueError("Invalid saved auction history")
+    return game, rng, auction
