@@ -24,6 +24,25 @@ contextual suggestions. The game lives in Streamlit session state; closing
 or resetting the session loses the match. Save/resume, full card art, and
 proper reveal-and-choose meditation are future work.
 
+## Smarter opponents and balance checks (v0.10)
+
+Bots now rank auction cards based on usefulness, deployment space, elemental
+diversity, and the remaining rounds. When their teams are full, they evaluate
+the **whole team's prestige and quest opportunities** before swapping dragons.
+They also avoid recruiting an unnecessarily large inactive reserve and can
+switch to affordable buildings when their preferred action is unavailable.
+
+Run a balance sample using the same eight-round format as the visual game:
+
+```bash
+python3 -m dragon_realms.simulate --players 4 --games 200 --rounds 8
+```
+
+The JSON report contains strategy win rates, average scores, and scoring
+components. Results will fluctuate with sample size and game seeds. Use
+several hundred games before drawing balance conclusions. This is a
+first AI improvement pass, not evidence that the strategies are balanced.
+
 ## Dragon abilities (v0.9)
 
 Nonstarter dragons now specialize by element:
