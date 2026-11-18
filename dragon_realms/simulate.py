@@ -169,6 +169,7 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0,
     total_scores: Counter[str] = Counter()
     finished = 0
     components: dict[str, Counter[str]] = {}
+    actions: dict[str, Counter[str]] = {}
     for index in range(games):
         rotation = index % players
         lineup = tuple(STRATEGIES[(seat + rotation) % len(STRATEGIES)]
@@ -181,6 +182,12 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0,
             total_scores[strategy] += score
             components.setdefault(strategy, Counter()).update(
                 result.breakdowns[pid])
+        for event in result.events:
+            if event["event"] == "action":
+                strategy = result.strategies[event["player"]]
+                actions.setdefault(strategy, Counter())[
+                    event["action"]
+                ] += 1
         for winner in result.winners:
             wins[result.strategies[winner]] += 1 / len(result.winners)
     counts = Counter()
@@ -202,6 +209,16 @@ def simulate(games: int = 100, players: int = 4, seed: int = 0,
                 "average_components": {
                     k: round(v / count, 2)
                     for k, v in sorted(components.get(strategy, {}).items())
+                },
+                "average_actions": {
+                    action: round(
+                        actions.get(strategy, Counter())[action] / count,
+                        2,
+                    )
+                    for action in (
+                        "quest", "build", "bond", "channel",
+                        "recruit", "meditate",
+                    )
                 },
             }
             for strategy, count in counts.items()
