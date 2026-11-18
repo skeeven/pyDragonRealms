@@ -18,11 +18,11 @@ python3 -m pytest -q
 python3 -m streamlit run app.py
 ```
 
-Play a six-round match against three computer Wardens using a visual
-scoreboard, sealed auctions, deployment, quest and building actions, and
-contextual suggestions. The game lives in Streamlit session state; closing
-or resetting the session loses the match. Save/resume, full card art, and
-proper reveal-and-choose meditation are future work.
+Play an eight-round match by default against three computer Wardens
+using a visual scoreboard, sealed auctions, deployment, quest and building
+actions, and contextual suggestions. The game runs in Streamlit session
+state; export a JSON save before closing the browser if you want to resume.
+Full card art and proper reveal-and-choose meditation are future work.
 
 ## Adaptive opponents and action diagnostics (v0.12)
 
