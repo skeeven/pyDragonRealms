@@ -83,6 +83,16 @@ ELEMENT_EMOJI = {
 }
 
 
+ABILITY_SHORT = {
+    "produce:ember": "+1 Ember / round",
+    "produce:crystal": "+1 Crystal / round",
+    "produce:aether": "+1 Aether / round",
+    "storm_boost": "+1 quest power",
+    "stone_guard": "+1 active prestige",
+    "shadow_bonus": "+1 quest prestige",
+}
+
+
 def show_dragon_slots(game: Game, dragons, slots: int) -> None:
     """Draw compact dragon slots instead of tall text panels."""
     if not slots:
@@ -110,7 +120,9 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
                 f'<small>{card.element}{exhausted}</small>'
                 f'<small>⚔ {card.power + dragon.bond} '
                 f'· 🏆 {card.prestige} '
-                f'· 🤝 {dragon.bond}</small></div>',
+                f'· 🤝 {dragon.bond}</small>'
+                f'<small>{ABILITY_SHORT.get(card.effect, "")}</small>'
+                '</div>',
                 unsafe_allow_html=True,
             )
 
