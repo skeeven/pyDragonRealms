@@ -48,10 +48,62 @@ st.markdown(
         border-radius: 12px;
         padding: 10px 14px;
     }
+    .dragon-slot {
+        min-height: 132px; padding: 9px 6px;
+        border: 1px solid #46617a; border-radius: 10px;
+        background: #142638; text-align: center;
+        display: flex; flex-direction: column;
+        justify-content: center; gap: 4px;
+    }
+    .dragon-slot strong {font-size: .85rem; line-height: 1.1;}
+    .dragon-slot small {font-size: .73rem; color: #c0d1dd;}
+    .dragon-icon {font-size: 1.55rem;}
+    .empty-slot {border-style: dashed; opacity: .5;}
+    .empty-slot span {font-size: 1.6rem;}
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+ELEMENT_EMOJI = {
+    "Flame": "🔥",
+    "Tide": "🌊",
+    "Grove": "🌿",
+    "Storm": "⚡",
+    "Stone": "🪨",
+    "Shadow": "🌑",
+}
+
+
+def show_dragon_slots(game: Game, dragons, slots: int) -> None:
+    """Draw compact dragon slots instead of tall text panels."""
+    if not slots:
+        return
+    columns = st.columns(min(slots, 5), gap="small")
+    for index in range(slots):
+        with columns[index % len(columns)]:
+            if index >= len(dragons):
+                st.markdown(
+                    '<div class="dragon-slot empty-slot">'
+                    '<span>＋</span><small>EMPTY SLOT</small></div>',
+                    unsafe_allow_html=True,
+                )
+                continue
+            dragon = dragons[index]
+            card = game.cards[dragon.card_id]
+            symbol = ELEMENT_EMOJI.get(card.element, "🐉")
+            exhausted = " · Resting" if dragon.exhausted else ""
+            st.markdown(
+                '<div class="dragon-slot">'
+                f'<div class="dragon-icon">{symbol}</div>'
+                f'<strong>{card.name}</strong>'
+                f'<small>{card.element}{exhausted}</small>'
+                f'<small>⚔ {card.power + dragon.bond} '
+                f'· 🏆 {card.prestige} '
+                f'· 🤝 {dragon.bond}</small></div>',
+                unsafe_allow_html=True,
+            )
 
 
 def start_game(seed: int, rounds: int = 8) -> None:
@@ -127,7 +179,7 @@ def preview_swap(game: Game, incoming, outgoing) -> int:
 def market_screen(game: Game) -> None:
     """Collect human bids, then resolve the auction and start actions."""
     player = game.players[HUMAN]
-    st.subheader("🏛️ Market · Sealed auction")
+    st.markdown("**🏛️ Market · Sealed auction**")
     st.write(
         "Bid Crystal to win dragons and relics. You only pay for "
         "winning bids. You can win at most two cards per round. "
@@ -215,7 +267,7 @@ def market_screen(game: Game) -> None:
 def deploy_screen(game: Game) -> None:
     """Allow a free deployment or an informed replacement."""
     player = game.players[HUMAN]
-    st.subheader("🐲 Deploy a dragon")
+    st.markdown("**🐲 Choose a reserve dragon**")
     st.write(
         "Only deployed dragons earn dragon prestige, contribute "
         "to elemental synergy, and complete quests. You can "
@@ -279,7 +331,7 @@ def deploy_screen(game: Game) -> None:
 def action_screen(game: Game) -> None:
     """Offer guided, validated actions with meaningful outcomes."""
     player = game.players[HUMAN]
-    st.subheader(f"⚔️ Your actions · {player.actions_left} left")
+    st.markdown(f"**⚔️ {player.actions_left} actions remaining**")
     quests = sorted(
         quest_options(game, HUMAN),
         key=lambda option: (-option[2], len(option[1])),
@@ -311,7 +363,7 @@ def action_screen(game: Game) -> None:
             f"Consider building {label(game, best)} "
             "for immediate prestige."
         )
-    elif game.round < 6:
+    elif game.round < game.max_rounds:
         st.info(
             "No immediate quest or affordable building. "
             "Gather resources for next round or strengthen a dragon."
@@ -488,144 +540,131 @@ def finish_round(game: Game) -> None:
 
 
 def main() -> None:
-    """Render a session-local single-player match."""
-    st.title("🐉 Dragon Realms")
-    st.caption("Build your dragon team → complete quests → earn prestige")
+    """Render a compact, guided, session-local game board."""
     with st.sidebar:
-        st.header("Game controls")
+        st.header("New match")
         rounds = st.selectbox("Match length", [8, 6, 10])
         seed = st.number_input(
-            "New game seed", min_value=0, value=0, step=1
+            "Game seed", min_value=0, value=0, step=1
         )
-        if st.button("New game", type="primary"):
+        if st.button("Start new game", type="primary"):
             start_game(int(seed), rounds)
             st.rerun()
-        st.caption(
-            "Games live in this browser session. "
-            "Save/resume is not yet implemented."
-        )
-        st.markdown(
-            "**How to win:** Earn the most prestige after the final "
-            "round. Only deployed dragons count for dragon "
-            "prestige; diversity can add synergy."
-        )
+        st.caption("Matches remain in this browser session.")
+        with st.expander("Rules overview"):
+            st.write(
+                "Bid for cards, deploy dragons, then take two actions "
+                "per round. Deployed dragons score points and attempt "
+                "quests. Reserve dragons are inactive."
+            )
+
     if "game" not in st.session_state:
         start_game(0, 8)
     game = st.session_state.game
     player = game.players[HUMAN]
-    st.progress(game.round / game.max_rounds, text=f"Round {game.round}/{game.max_rounds} · {game.phase.value.title()}")
-    columns = st.columns(5)
-    for column, (name, value) in zip(
-        columns,
-        [
-            ("💎 Crystal", player.resources["crystal"]),
-            ("🔥 Ember", player.resources["ember"]),
-            ("✨ Aether", player.resources["aether"]),
-            ("🏆 Prestige", game.score(HUMAN)),
-            ("⚔️ Actions", player.actions_left),
-        ],
-    ):
+
+    st.markdown("### 🐉 Dragon Realms")
+    st.progress(
+        game.round / game.max_rounds,
+        text=(f"Round {game.round}/{game.max_rounds} · "
+              f"{game.phase.value.title()}"),
+    )
+    metric_columns = st.columns(5)
+    for column, (name, value) in zip(metric_columns, [
+        ("💎 Crystal", player.resources["crystal"]),
+        ("🔥 Ember", player.resources["ember"]),
+        ("✨ Aether", player.resources["aether"]),
+        ("🏆 Prestige", game.score(HUMAN)),
+        ("⚔️ Actions", player.actions_left),
+    ]):
         column.metric(name, value)
+
+    scores = sorted(
+        game.scores().items(), key=lambda pair: -pair[1]
+    )
+    st.caption(" · ".join(
+        f"{pid}: {score}" for pid, score in scores
+    ))
     notice = st.session_state.get("notice")
     if notice:
-        st.info(notice)
-    with st.expander("🏅 Rival scores"):
-        score_columns = st.columns(4)
-        for column, (pid, score) in zip(
-            score_columns, game.scores().items()
-        ):
-            column.metric(pid, score)
+        st.caption(f"ℹ️ {notice}")
+
     if game.phase == Phase.FINISHED:
         st.success(
             f"Game over! Winner: {', '.join(game.winners())}"
         )
         st.dataframe(
-            [dict(Warden=pid, **score_breakdown(game, pid),
-                  Total=game.score(pid)) for pid in game.players],
-            hide_index=True, use_container_width=True,
+            [
+                dict(Warden=pid, **score_breakdown(game, pid),
+                     Total=game.score(pid))
+                for pid in game.players
+            ],
+            hide_index=True,
+            use_container_width=True,
         )
         return
-    if game.phase == Phase.MARKET:
-        market_screen(game)
-        return
-    if game.phase != Phase.ACTIONS:
-        st.error(f"Unexpected game phase: {game.phase.value}")
-        return
-    board, controls = st.columns([1, 1.4], gap="medium")
+
+    board, decisions = st.columns([1.25, 1], gap="medium")
     with board:
-        st.markdown("#### 🛡️ Deployed dragons · Active team")
+        st.markdown("#### 🛡️ Active dragons · 5 slots")
         st.caption(
-            "Active dragons score prestige, contribute to synergy, "
-            "and can complete quests. Maximum five."
+            "Deployed dragons contribute prestige, synergy and "
+            "quest power. Exhausted dragons recover next round."
         )
-        dragon_columns = st.columns(2)
-        for index, item in enumerate(player.deployed):
-            with dragon_columns[index % 2]:
-                with st.container(border=True):
-                    card_panel(game, item)
+        show_dragon_slots(game, player.deployed, 5)
         st.markdown(
-            f"#### 🃏 Reserve · {len(player.reserve)} inactive dragons"
+            f"#### 🃏 Reserve · {len(player.reserve)} inactive"
         )
         st.caption(
-            "These are dragons you own but haven't deployed. "
-            "They don't score until moved to your active team."
+            "Owned dragons waiting to be deployed. "
+            "Reserve dragons do not score."
         )
         if player.reserve:
-            reserve_columns = st.columns(2)
-            for index, item in enumerate(player.reserve):
-                with reserve_columns[index % 2]:
-                    with st.container(border=True):
-                        card_panel(game, item)
+            show_dragon_slots(
+                game, player.reserve, len(player.reserve)
+            )
         else:
-            st.caption("Your reserve is empty.")
+            st.caption("Empty — win or recruit a dragon.")
         with st.expander(
             f"🏰 Buildings ({len(player.buildings)}) · "
             f"✨ Relics ({len(player.relics)})"
         ):
             for item in player.buildings + player.relics:
                 card_panel(game, item)
-        with st.expander("🏅 Scoring details"):
+        with st.expander("Scoring and auction history"):
             st.write(score_breakdown(game, HUMAN))
-        with st.expander("Auction recap"):
-            results = st.session_state.get("auction", [])
-            for item in results:
-                st.write(
-                    f"{item['winner']} won {item['card']} "
-                    f"for {item['amount']} Crystal."
+            for result in st.session_state.get("auction", []):
+                st.caption(
+                    f"{result['winner']}: {result['card']} "
+                    f"({result['amount']} Crystal)"
                 )
-            if not results:
-                st.caption("No cards were won.")
-    with controls:
-        with st.expander("📖 How to play", expanded=game.round == 1):
-            st.write(
-                "**Your goal:** Finish the match with the most "
-                "prestige. Dragons only score while deployed. "
-                "Different elements can earn synergy bonuses."
+
+    with decisions:
+        if game.phase == Phase.MARKET:
+            st.markdown("#### Step 1 of 3 · Acquire")
+            market_screen(game)
+        elif game.phase == Phase.ACTIONS:
+            deployment_available = (
+                not player.swapped and bool(player.reserve)
             )
-            st.write(
-                "**Each round:** 1) Bid for cards. "
-                "2) Deploy or swap one dragon for free. "
-                "3) Take two actions. "
-                "4) Rivals act and everyone gathers resources."
-            )
-            st.write(
-                "**Starting strategy:** Deploy a strong dragon, "
-                "complete achievable quests, and build when "
-                "affordable. Bonds boost quest power; channeling "
-                "prepares for future turns."
-            )
-        if not player.swapped and player.reserve:
-            deploy_screen(game)
-        elif player.swapped:
-            st.caption("✓ Dragon deployment used this round")
-        if player.actions_left:
-            action_screen(game)
+            if deployment_available:
+                st.markdown("#### Step 2 of 3 · Deploy")
+                deploy_screen(game)
+                st.divider()
+            elif player.swapped:
+                st.caption("✓ Free deployment used this round")
+            if player.actions_left:
+                st.markdown("#### Step 3 of 3 · Take actions")
+                action_screen(game)
+            else:
+                st.success("Your actions are complete.")
+                if st.button(
+                    "End round · Rivals take their turns",
+                    type="primary",
+                ):
+                    finish_round(game)
         else:
-            st.success("Your two actions are complete.")
-            if st.button(
-                "End round · Let rivals act", type="primary"
-            ):
-                finish_round(game)
+            st.error(f"Unexpected game phase: {game.phase.value}")
 
 
 if __name__ == "__main__":
