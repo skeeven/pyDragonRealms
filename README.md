@@ -48,6 +48,28 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Final layout polish (v0.16.1)
+
+Restores top spacing and a minimum title height so **Dragon Realms** is
+fully visible below Streamlit's toolbar. Active and reserve dragon
+cards now share the same five-column width, even when only one reserve
+dragon is present.
+
+The quest tab uses concise requirement, reward, and availability lines;
+ready quests retain their action button and exact dragon team. The
+**Save and resume** sidebar controls are still available inside a
+collapsed expander, making more room for normal play. The compact
+auction market introduced in v0.16 is unchanged.
+
+Run the usual checks and launch the interface:
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Compact market and board (v0.16)
 
 The market has a compact 2×2 grid of illustrated auction tiles. The
