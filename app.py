@@ -48,20 +48,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1500px; padding-top: 3.25rem;}
+    .block-container {max-width: 1500px; padding-top: 1.8rem;}
     h1 {font-size: 1.65rem !important;}
     .game-title {font-size: 1.65rem; font-weight: 750;
         line-height: 1.3; margin: 0 0 0.4rem 0;}
-    div[data-testid="stVerticalBlock"] {gap: 0.45rem;}
+    div[data-testid="stVerticalBlock"] {gap: 0.32rem;}
     div[data-testid="stMetricValue"] {font-size: 1.45rem;}
     div[data-testid="stMetric"] {
         background: #15283a;
         border: 1px solid #35536a;
         border-radius: 12px;
-        padding: 10px 14px;
+        padding: 7px 11px;
     }
     .dragon-slot {
-        min-height: 172px; padding: 8px 5px;
+        min-height: 154px; padding: 6px 5px;
         border: 1px solid var(--dragon-line, #46617a);
         border-radius: 12px;
         background: linear-gradient(160deg, var(--dragon-tint, #182b3d),
@@ -73,7 +73,7 @@ st.markdown(
     }
     .dragon-slot svg {
         display: block; width: min(100%, 120px);
-        height: auto; max-height: 86px;
+        height: auto; max-height: 70px;
         filter: drop-shadow(0 3px 8px #0005);
     }
     .dragon-slot strong {
@@ -92,6 +92,38 @@ st.markdown(
     }
     .card-art svg {display: block;}
     .element-key {font-size: .77rem; opacity: .9;}
+    .market-card {
+        border: 1px solid #35536a;
+        border-left: 3px solid var(--card-accent, #35536a);
+        border-radius: 9px; background: #162532;
+        padding: 7px 9px; min-height: 95px;
+    }
+    .market-card-head {
+        display: flex; align-items: center; gap: 8px;
+    }
+    .market-card-art {width: 62px; flex: 0 0 62px;}
+    .market-card-art svg {
+        display: block; width: 62px; height: auto;
+    }
+    .market-card-body {min-width: 0; flex: 1;}
+    .market-card-title {
+        display: block; font-size: .82rem; line-height: 1.15;
+        color: #f4f7fc; font-weight: 700;
+    }
+    .market-card-meta {
+        display: block; font-size: .71rem; color: #c9d8e6;
+        margin-top: 3px;
+    }
+    .market-card-ability {
+        display: block; font-size: .70rem; color: #f0d69a;
+        margin-top: 4px; line-height: 1.15;
+    }
+    div[data-testid="stForm"] {
+        border: 0; padding: 0; background: transparent;
+    }
+    div[data-testid="stForm"] div[data-testid="stNumberInput"] {
+        margin-top: -2px;
+    }
     .empty-slot {border-style: dashed; opacity: .5;}
     .empty-slot span {font-size: 1.6rem;}
     </style>
@@ -228,6 +260,42 @@ def card_panel(game: Game, item, extra: str = "") -> None:
         st.caption(extra)
 
 
+def market_card_html(game: Game, item) -> str:
+    """Return a compact, accessible market-card summary."""
+    card = game.cards[item.card_id]
+    title = escape(card.name)
+    if card.kind == "dragon":
+        artwork = dragon_svg(card.element, 62)
+        metadata = (
+            f"{escape(card.element)} · "
+            f"⚔ {card.power} · 🏆 {card.prestige}"
+        )
+        description = escape(
+            ABILITY_SHORT.get(card.effect, "No special ability")
+        )
+        accent = PALETTES[card.element][0]
+    else:
+        artwork = '<span aria-hidden="true">✨</span>'
+        metadata = f"🏆 {card.prestige} · Min bid 3 Crystal"
+        description = escape(
+            DRAGON_ABILITIES.get(card.effect, "")
+            or card.effect.replace("_", " ").title()
+            or "Mystical relic"
+        )
+        accent = "#d8b977"
+    return (
+        f'<div class="market-card" '
+        f'style="--card-accent:{accent}">'
+        '<div class="market-card-head">'
+        f'<span class="market-card-art">{artwork}</span>'
+        '<span class="market-card-body">'
+        f'<strong class="market-card-title">{title}</strong>'
+        f'<span class="market-card-meta">{metadata}</span>'
+        f'<span class="market-card-ability">{description}</span>'
+        '</span></div></div>'
+    )
+
+
 def preview_swap(game: Game, incoming, outgoing) -> int:
     """Calculate a swap's exact immediate prestige change."""
     player = game.players[HUMAN]
@@ -244,39 +312,44 @@ def market_screen(game: Game) -> None:
     """Collect human bids, then resolve the auction and start actions."""
     player = game.players[HUMAN]
     st.markdown("**🏛️ Market · Sealed auction**")
-    st.write(
-        "Bid Crystal to win dragons and relics. You only pay for "
-        "winning bids. You can win at most two cards per round. "
-        "New dragons go into your reserve until deployed."
-    )
-    st.info(
-        "Tip: Powerful dragons help with quests, but buying more "
-        "than you can deploy may waste Crystal."
+    st.caption(
+        "Bid 0 to pass or at least 2 Crystal for dragons "
+        "(3 for relics). Win up to 2 cards; pay only if you win."
     )
     with st.form(f"market_{game.round}"):
-        columns = st.columns(2)
+        submitted = st.form_submit_button(
+            "⚔️ Resolve auction", type="primary",
+            use_container_width=True,
+        )
+        columns = st.columns(2, gap="small")
         bids = {}
         for index, item in enumerate(game.market):
             column = columns[index % len(columns)]
             card = game.cards[item.card_id]
             minimum = 3 if card.kind == "relic" else 2
             with column:
-                card_panel(game, item)
+                st.markdown(
+                    market_card_html(game, item),
+                    unsafe_allow_html=True,
+                )
                 bids[item.uid] = st.number_input(
-                    f"Bid · min {minimum} or 0",
+                    f"Bid for {card.name} (0 or {minimum}+)",
                     min_value=0,
                     max_value=player.resources["crystal"],
                     value=0,
                     step=1,
+                    label_visibility="collapsed",
                     key=f"bid_{game.round}_{item.uid}",
+                    help=(
+                        f"Bid 0 to pass, or at least "
+                        f"{minimum} Crystal."
+                    ),
                 )
         total = sum(bids.values())
         st.caption(
-            f"Committed bids: {total} / "
-            f"{player.resources['crystal']} Crystal"
-        )
-        submitted = st.form_submit_button(
-            "Resolve auction", type="primary"
+            f"💎 Your bids: {total} / "
+            f"{player.resources['crystal']} Crystal · "
+            "Maximum 2 cards won."
         )
     if not submitted:
         return
