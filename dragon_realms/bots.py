@@ -33,11 +33,17 @@ def _building_value(game: Game, pid: str, item) -> float:
     if effect == "warden_hall":
         bonus = len(player.deployed)
     elif effect == "quest_power":
-        bonus = 1.7 * remaining
+        # Power is a one-point threshold modifier, not a guaranteed
+        # extra quest every round. A second Beacon does not stack.
+        existing = any(
+            game.cards[b.card_id].effect == "quest_power"
+            for b in player.buildings
+        )
+        bonus = 0.0 if existing else min(3.0, remaining * 0.65)
     elif effect.startswith("produce:"):
         resource = effect.split(":", 1)[1]
-        weight = {"crystal": 0.65, "ember": 0.55,
-                  "aether": 0.7}[resource]
+        weight = {"crystal": 0.3, "ember": 0.25,
+                  "aether": 0.35}[resource]
         bonus = remaining * weight
     elif effect == "rebate":
         bonus = min(2.5, remaining * 0.4)
@@ -76,6 +82,30 @@ def _best_quest(game: Game, pid: str):
         ),
         default=None,
     )
+
+
+def _best_bond(game: Game, pid: str):
+    """Find an affordable bond with a useful scoring payoff."""
+    player = game.players[pid]
+    options = [
+        dragon for dragon in player.deployed
+        if dragon.bond < 3
+        and _affordable(player.resources, BOND_COSTS[dragon.bond])
+    ]
+    if not options:
+        return None, 0.0
+    target = max(
+        options,
+        key=lambda dragon: (
+            (0, 1, 2)[dragon.bond],
+            value(game, dragon),
+        ),
+    )
+    immediate = (0, 1, 2)[target.bond]
+    # Stronger bonds help future quests; only completed levels
+    # score permanent points, so don't overvalue early levels.
+    future = 0.25 * max(0, game.max_rounds - game.round)
+    return target, immediate + future
 
 
 def value(game: Game, item) -> float:
@@ -183,6 +213,20 @@ def choose_action(game: Game, pid: str, strategy: str) -> str:
             dragons=[dragon.uid for dragon in dragons],
         )
         return "quest"
+
+    # Builders use spare actions to strengthen dragons when the
+    # available buildings add less value than a bond.
+    if strategy == "builder":
+        dragon, bond_value = _best_bond(game, pid)
+        building_value = (
+            _building_value(game, pid, building)
+            if building is not None else float("-inf")
+        )
+        if dragon is not None and (
+            building is None or bond_value > building_value
+        ):
+            game.act(pid, "bond", uid=dragon.uid)
+            return "bond"
 
     if strategy in ("balanced", "builder") and building is not None:
         game.act(pid, "build", uid=building.uid)
