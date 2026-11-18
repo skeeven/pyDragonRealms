@@ -48,6 +48,29 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Victory and match history (v0.14)
+
+When the final round ends, Dragon Realms displays a winner announcement,
+ranked prestige totals, the six scoring categories for every Warden,
+and a timeline of key actions, deployments, and auction wins.
+
+The leaderboard uses the same tie-breakers as the rules engine:
+prestige, quests completed, total bond levels, and remaining Crystal.
+The timeline supports filtering by round and includes richer card names
+for games started with v0.14. Older saved matches still load and show
+their existing event history; older events may not include card names.
+
+Click **Play another match** on the finished screen to begin a fresh match
+with the same round count and a new random seed. A new match replaces the
+current in-browser game, so download a save first if you want to retain it.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Save and resume (v0.13)
 
 Use **Save and resume** in the Streamlit sidebar. Click **Download saved
