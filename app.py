@@ -12,7 +12,6 @@ from dragon_realms.advisor import chapter, quest_previews, recommendation
 from dragon_realms.bots import (
     choose_action,
     deploy_best,
-    quest_options,
     score_breakdown,
 )
 from dragon_realms.engine import Game, Phase, RuleError
@@ -336,10 +335,6 @@ def action_screen(game: Game) -> None:
     """Offer guided, validated actions with meaningful outcomes."""
     player = game.players[HUMAN]
     st.markdown(f"**⚔️ {player.actions_left} actions remaining**")
-    quests = sorted(
-        quest_options(game, HUMAN),
-        key=lambda option: (-option[2], len(option[1])),
-    )
     buildings = [
         item for item in game.blueprints
         if can_afford(
