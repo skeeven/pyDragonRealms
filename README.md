@@ -24,6 +24,30 @@ contextual suggestions. The game lives in Streamlit session state; closing
 or resetting the session loses the match. Save/resume, full card art, and
 proper reveal-and-choose meditation are future work.
 
+## Adaptive opponents and action diagnostics (v0.12)
+
+Builder can strengthen dragons when quests or worthwhile buildings are
+unavailable, instead of spending every spare action collecting resources.
+Its building heuristic now discounts speculative production and quest-power
+benefits, and it does not assign a second Quest Beacon an extra quest-power
+bonus (the engine's effect does not stack).
+
+The simulation report now includes **average_actions** for each strategy:
+`quest`, `build`, `bond`, `channel`, `recruit`, and `meditate`.
+These are measured from engine action events, not inferred from prestige.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m dragon_realms.simulate --players 4 --games 200 --rounds 8
+```
+
+The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
+33.5%, Bonding 33.5%, Collector 24%, and Builder 9% wins. Builder's
+average score was 41.73 and its average quest prestige was 12.07.
+Compare the new action mix and scores before changing card rules.
+
 ## Strategy tuning (v0.11)
 
 The Builder bot estimates a building's **remaining-match value**, factoring
