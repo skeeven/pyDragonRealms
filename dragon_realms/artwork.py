@@ -64,12 +64,13 @@ def dragon_svg(element: str, size: int = 112) -> str:
     primary, secondary, highlight, background = PALETTES[element]
     title = escape(f"{element} dragon illustration", quote=True)
     sigil = ELEMENT_SIGILS[element]
+    gradient_id = f"dragon-body-{element.lower()}"
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="0 0 120 92" width="{size}" height="{size * 92 // 120}" '
         f'role="img" aria-label="{title}" focusable="false">'
         '<defs>'
-        f'<linearGradient id="body" x1="0" y1="0" x2="1" y2="1">'
+        f'<linearGradient id="{gradient_id}" x1="0" y1="0" x2="1" y2="1">'
         f'<stop stop-color="{primary}"/>'
         f'<stop offset="1" stop-color="{secondary}"/>'
         '</linearGradient>'
@@ -80,7 +81,7 @@ def dragon_svg(element: str, size: int = 112) -> str:
         f'stroke="{highlight}" opacity=".22" stroke-width="1.5"/>'
         f'{sigil}'
         '<path d="M43 64 Q10 90 14 60 Q25 74 43 57" '
-        'fill="url(#body)" opacity=".9"/>'
+        f'fill="url(#{gradient_id})" opacity=".9"/>'
         '<path d="M51 52 Q26 7 10 22 Q23 32 29 55 '
         'L18 49 Q30 72 52 66 Z" fill="url(#body)" '
         f'stroke="{highlight}" stroke-width="1.3" opacity=".9"/>'
