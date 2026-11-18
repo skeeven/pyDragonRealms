@@ -51,9 +51,9 @@ st.markdown(
 )
 
 
-def start_game(seed: int) -> None:
+def start_game(seed: int, rounds: int = 8) -> None:
     """Initialize a new match and advance to its first market."""
-    game = Game([HUMAN, *BOTS], seed=seed)
+    game = Game([HUMAN, *BOTS], seed=seed, max_rounds=rounds)
     game.gather()
     st.session_state.game = game
     st.session_state.rng = Random(seed + 1)
@@ -490,26 +490,27 @@ def main() -> None:
     st.caption("Build your dragon team → complete quests → earn prestige")
     with st.sidebar:
         st.header("Game controls")
+        rounds = st.selectbox("Match length", [8, 6, 10])
         seed = st.number_input(
             "New game seed", min_value=0, value=0, step=1
         )
         if st.button("New game", type="primary"):
-            start_game(int(seed))
+            start_game(int(seed), rounds)
             st.rerun()
         st.caption(
             "Games live in this browser session. "
             "Save/resume is not yet implemented."
         )
         st.markdown(
-            "**How to win:** Earn the most prestige after six "
+            "**How to win:** Earn the most prestige after the final "
             "rounds. Only deployed dragons count for dragon "
             "prestige; diversity can add synergy."
         )
     if "game" not in st.session_state:
-        start_game(0)
+        start_game(0, 8)
     game = st.session_state.game
     player = game.players[HUMAN]
-    st.progress(game.round / 6, text=f"Round {game.round}/6 · {game.phase.value.title()}")
+    st.progress(game.round / game.max_rounds, text=f"Round {game.round}/{game.max_rounds} · {game.phase.value.title()}")
     columns = st.columns(5)
     for column, (name, value) in zip(
         columns,
@@ -549,18 +550,36 @@ def main() -> None:
         return
     board, controls = st.columns([1, 1.4], gap="medium")
     with board:
-        st.markdown("#### 🐲 Your dragon team")
+        st.markdown("#### 🛡️ Deployed dragons · Active team")
+        st.caption(
+            "Active dragons score prestige, contribute to synergy, "
+            "and can complete quests. Maximum five."
+        )
         dragon_columns = st.columns(2)
         for index, item in enumerate(player.deployed):
             with dragon_columns[index % 2]:
-                card_panel(game, item)
+                with st.container(border=True):
+                    card_panel(game, item)
+        st.markdown(
+            f"#### 🃏 Reserve · {len(player.reserve)} inactive dragons"
+        )
+        st.caption(
+            "These are dragons you own but haven't deployed. "
+            "They don't score until moved to your active team."
+        )
+        if player.reserve:
+            reserve_columns = st.columns(2)
+            for index, item in enumerate(player.reserve):
+                with reserve_columns[index % 2]:
+                    with st.container(border=True):
+                        card_panel(game, item)
+        else:
+            st.caption("Your reserve is empty.")
         with st.expander(
-            f"Reserve ({len(player.reserve)}) · Buildings "
-            f"({len(player.buildings)}) · Relics ({len(player.relics)})"
+            f"🏰 Buildings ({len(player.buildings)}) · "
+            f"✨ Relics ({len(player.relics)})"
         ):
-            for item in (
-                player.reserve + player.buildings + player.relics
-            ):
+            for item in player.buildings + player.relics:
                 card_panel(game, item)
         with st.expander("🏅 Scoring details"):
             st.write(score_breakdown(game, HUMAN))
@@ -576,7 +595,7 @@ def main() -> None:
     with controls:
         with st.expander("📖 How to play", expanded=game.round == 1):
             st.write(
-                "**Your goal:** Finish six rounds with the most "
+                "**Your goal:** Finish the match with the most "
                 "prestige. Dragons only score while deployed. "
                 "Different elements can earn synergy bonuses."
             )
