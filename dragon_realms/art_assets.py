@@ -49,6 +49,7 @@ def dragon_art_html(
     element: str,
     size: int = 112,
     variant: int | None = None,
+    portrait: bool = False,
 ) -> str:
     """Render illustrated WebP artwork or a self-contained SVG fallback."""
     if not isinstance(size, int) or isinstance(size, bool):
@@ -62,8 +63,10 @@ def dragon_art_html(
         return dragon_svg(element, size, variant)
     src = _cached_image(str(path), path.stat().st_mtime_ns)
     title = escape(f"{element} dragon illustration", quote=True)
+    height = size * 3 // 2 if portrait else size
+    ratio = "2/3" if portrait else "1/1"
     return (
         f'<img src="{src}" alt="{title}" loading="lazy" '
-        f'width="{size}" height="{size}" '
-        f'style="display:block;object-fit:cover;aspect-ratio:1/1;" />'
+        f'width="{size}" height="{height}" '
+        f'style="display:block;object-fit:cover;aspect-ratio:{ratio};" />'
     )
