@@ -192,7 +192,8 @@ def market_screen(game: Game) -> None:
     with st.form(f"market_{game.round}"):
         columns = st.columns(2)
         bids = {}
-        for index, item in enumerate(game.market):\n            column = columns[index % len(columns)]
+        for index, item in enumerate(game.market):
+            column = columns[index % len(columns)]
             card = game.cards[item.card_id]
             minimum = 3 if card.kind == "relic" else 2
             with column:
