@@ -26,7 +26,11 @@ def affordable(resources: dict[str, int],
 
 def team_power(game: Game, dragons) -> int:
     """Calculate quest power with the same modifiers as the engine."""
-    return sum(game.cards[d.card_id].power + d.bond for d in dragons)
+    return sum(
+        game.cards[d.card_id].power + d.bond
+        + int(game.cards[d.card_id].effect == "storm_boost")
+        for d in dragons
+    )
 
 
 def quest_previews(game: Game, pid: str) -> list[dict[str, Any]]:
