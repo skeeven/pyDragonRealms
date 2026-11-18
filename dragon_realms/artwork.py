@@ -55,17 +55,44 @@ ELEMENT_SIGILS = {
 }
 
 
-def dragon_svg(element: str, size: int = 112) -> str:
-    """Render original lightweight dragon artwork without external assets."""
+def dragon_svg(element: str, size: int = 112,
+               variant: int = 0) -> str:
+    """Render original element art with an optional card-specific variation."""
     if element not in PALETTES:
         raise ValueError(f"Unknown dragon element: {element}")
     if (not isinstance(size, int) or isinstance(size, bool)
             or not 24 <= size <= 512):
         raise ValueError("Artwork size must be between 24 and 512 pixels")
+    if (not isinstance(variant, int) or isinstance(variant, bool)
+            or not 0 <= variant <= 8):
+        raise ValueError("Dragon variant must be between 0 and 8")
     primary, secondary, highlight, background = PALETTES[element]
     title = escape(f"{element} dragon illustration", quote=True)
     sigil = ELEMENT_SIGILS[element]
-    gradient_id = f"dragon-body-{element.lower()}"
+    gradient_id = f"dragon-body-{element.lower()}-{variant}"
+    # Eight different crest shapes make numbered dragons distinctive
+    # without requiring image assets or changes to the card rules.
+    crests = (
+        "",
+        '<path d="M43 40 L34 18 L47 28"/>',
+        '<path d="M57 32 L52 10 L65 25"/>',
+        '<path d="M77 31 L90 12 L86 37"/>',
+        '<path d="M40 54 L19 39 L37 44"/>',
+        '<path d="M85 56 L108 44 L90 46"/>',
+        '<path d="M46 70 L30 82 L56 75"/>',
+        '<path d="M70 74 L87 87 L78 70"/>',
+        '<path d="M35 30 L25 13 L43 23 M84 30 L96 13 L75 23"/>',
+    )
+    crest = (
+        f'<g fill="none" stroke="{highlight}" stroke-width="3.2" '
+        f'stroke-linejoin="round" opacity=".96">{crests[variant]}</g>'
+    )
+    pattern = (
+        f'<circle cx="{35 + variant * 5}" '
+        f'cy="{60 - variant % 3 * 6}" '
+        f'r="{2 + variant % 3}" fill="{highlight}" opacity=".8"/>'
+        if variant else ""
+    )
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="0 0 120 92" width="{size}" height="{size * 92 // 120}" '
@@ -81,6 +108,8 @@ def dragon_svg(element: str, size: int = 112) -> str:
         '<circle cx="59" cy="45" r="35" fill="none" '
         f'stroke="{highlight}" opacity=".22" stroke-width="1.5"/>'
         f'{sigil}'
+        f'{crest}'
+        f'{pattern}'
         '<path d="M43 64 Q10 90 14 60 Q25 74 43 57" '
         f'fill="url(#{gradient_id})" opacity=".9"/>'
         '<path d="M51 52 Q26 7 10 22 Q23 32 29 55 '
