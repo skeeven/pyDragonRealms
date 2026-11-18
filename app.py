@@ -12,6 +12,8 @@ import streamlit as st
 
 from dragon_realms.advisor import chapter, quest_previews, recommendation
 from dragon_realms.artwork import PALETTES, dragon_svg
+from dragon_realms.codex import codex_entries, codex_summary
+from dragon_realms.dragon_identity import dragon_lore, dragon_variant
 from dragon_realms.bots import (
     choose_action,
     deploy_best,
@@ -173,13 +175,17 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
             card = game.cards[dragon.card_id]
             exhausted = " · Resting" if dragon.exhausted else ""
             ability = DRAGON_ABILITIES.get(card.effect, "")
-            title = escape(ability, quote=True)
+            title = escape(
+                f"{ability} {dragon_lore(card.id)}", quote=True
+            )
             name = escape(card.name)
             palette = PALETTES.get(card.element)
             color = palette[0] if palette else "#46617a"
             tint = palette[3] if palette else "#142638"
             resting = " is-resting" if dragon.exhausted else ""
-            art = dragon_svg(card.element, 112)
+            art = dragon_svg(
+                card.element, 112, dragon_variant(card.id)
+            )
             st.markdown(
                 f'<div class="dragon-slot{resting}" title="{title}" '
                 f'style="--dragon-line:{color};--dragon-tint:{tint}">'
@@ -235,7 +241,7 @@ def card_panel(game: Game, item, extra: str = "") -> None:
     card = game.cards[item.card_id]
     element = f" · {card.element}" if card.element else ""
     if card.kind == "dragon":
-        art = dragon_svg(card.element, 64)
+        art = dragon_svg(card.element, 64, dragon_variant(card.id))
         st.markdown(
             f'<span class="card-art">{art}</span>'
             f'<strong>{escape(card.name)}</strong>',
@@ -268,7 +274,9 @@ def market_card_html(game: Game, item) -> str:
     card = game.cards[item.card_id]
     title = escape(card.name)
     if card.kind == "dragon":
-        artwork = dragon_svg(card.element, 62)
+        artwork = dragon_svg(
+            card.element, 62, dragon_variant(card.id)
+        )
         metadata = (
             f"{escape(card.element)} · "
             f"⚔ {card.power} · 🏆 {card.prestige}"
@@ -297,6 +305,41 @@ def market_card_html(game: Game, item) -> str:
         f'<span class="market-card-ability">{description}</span>'
         '</span></div></div>'
     )
+
+
+def codex_screen(game: Game) -> None:
+    """Show compact collection progress without changing game state."""
+    summary = codex_summary(game, HUMAN)
+    st.caption(
+        f"Discovered {summary['discovered']} of {summary['total']} "
+        f"dragons · {summary['owned']} currently owned"
+    )
+    family = st.selectbox(
+        "Dragon family",
+        ["Flame", "Tide", "Grove", "Storm", "Stone", "Shadow"],
+        key="codex_family",
+    )
+    entries = codex_entries(game, HUMAN, family)
+    columns = st.columns(2, gap="small")
+    for index, item in enumerate(entries):
+        with columns[index % 2]:
+            if item["status"] == "Unknown":
+                st.markdown("**🔒 Undiscovered dragon**")
+                st.caption("Acquire this dragon to reveal its story.")
+                continue
+            artwork = dragon_svg(
+                family, 56, item["variant"]
+            )
+            st.markdown(
+                f'<span class="card-art">{artwork}</span>'
+                f'<strong>{escape(item["name"])}</strong>',
+                unsafe_allow_html=True,
+            )
+            st.caption(
+                f'{item["status"]} · ⚔ {item["power"]}'
+                f' · 🏆 {item["prestige"]}'
+            )
+            st.caption(item["lore"])
 
 
 def preview_swap(game: Game, incoming, outgoing) -> int:
@@ -919,6 +962,12 @@ def main() -> None:
                     f"{result['winner']}: {result['card']} "
                     f"({result['amount']} Crystal)"
                 )
+        discovered = codex_summary(game, HUMAN)
+        with st.expander(
+            f"📖 Dragon Codex · "
+            f"{discovered['discovered']}/{discovered['total']}"
+        ):
+            codex_screen(game)
 
     with decisions:
         if game.phase == Phase.MARKET:
