@@ -1,6 +1,5 @@
 """Tests for v0.17 unique dragon identities and collection progress."""
 
-from random import Random
 from xml.etree import ElementTree
 
 from dragon_realms.artwork import dragon_svg
