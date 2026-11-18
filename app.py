@@ -14,7 +14,12 @@ from dragon_realms.bots import (
     deploy_best,
     score_breakdown,
 )
-from dragon_realms.engine import Game, Phase, RuleError
+from dragon_realms.engine import (
+    DRAGON_ABILITIES,
+    Game,
+    Phase,
+    RuleError,
+)
 from dragon_realms.simulate import _bid
 
 HUMAN = "You"
@@ -96,8 +101,10 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
             card = game.cards[dragon.card_id]
             symbol = ELEMENT_EMOJI.get(card.element, "🐉")
             exhausted = " · Resting" if dragon.exhausted else ""
+            ability = DRAGON_ABILITIES.get(card.effect, "")
+            title = ability.replace('"', "&quot;")
             st.markdown(
-                '<div class="dragon-slot">'
+                f'<div class="dragon-slot" title="{title}">'
                 f'<div class="dragon-icon">{symbol}</div>'
                 f'<strong>{card.name}</strong>'
                 f'<small>{card.element}{exhausted}</small>'
@@ -154,6 +161,8 @@ def card_panel(game: Game, item, extra: str = "") -> None:
             f"Prestige {card.prestige} · Bond {item.bond}"
             f"{' · Exhausted' if item.exhausted else ''}"
         )
+        if card.effect in DRAGON_ABILITIES:
+            st.caption(f"✨ {DRAGON_ABILITIES[card.effect]}")
     elif card.kind == "quest":
         st.caption(
             f"Requires {card.requirement} · Rewards {card.reward}"
@@ -376,6 +385,10 @@ def action_screen(game: Game) -> None:
                 f"🏆 +{preview['prestige']} prestige"
             )
             st.caption(" · ".join(requirements))
+            if preview["ready"]:
+                st.caption(
+                    "Listed prestige includes any Shadow bonuses."
+                )
             extra_rewards = {
                 key: value for key, value in preview["reward"].items()
                 if key != "prestige" and value
