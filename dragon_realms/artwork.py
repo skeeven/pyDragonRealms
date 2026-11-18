@@ -59,7 +59,8 @@ def dragon_svg(element: str, size: int = 112) -> str:
     """Render original lightweight dragon artwork without external assets."""
     if element not in PALETTES:
         raise ValueError(f"Unknown dragon element: {element}")
-    if not isinstance(size, int) or not 24 <= size <= 512:
+    if (not isinstance(size, int) or isinstance(size, bool)
+            or not 24 <= size <= 512):
         raise ValueError("Artwork size must be between 24 and 512 pixels")
     primary, secondary, highlight, background = PALETTES[element]
     title = escape(f"{element} dragon illustration", quote=True)
