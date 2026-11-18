@@ -12,7 +12,11 @@ import streamlit as st
 
 from dragon_realms.advisor import chapter, quest_previews, recommendation
 from dragon_realms.artwork import PALETTES, dragon_svg
-from dragon_realms.codex import codex_entries, codex_summary
+from dragon_realms.codex import (
+    codex_entries,
+    codex_summary,
+    family_progress,
+)
 from dragon_realms.dragon_identity import dragon_lore, dragon_variant
 from dragon_realms.bots import (
     choose_action,
@@ -127,6 +131,29 @@ st.markdown(
     }
     div[data-testid="stForm"] div[data-testid="stNumberInput"] {
         margin-top: -2px;
+    }
+    .codex-tile {
+        min-height: 98px; padding: 6px 4px;
+        border: 1px solid #42566a; border-radius: 9px;
+        background: #172636; text-align: center;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 3px;
+        overflow: hidden;
+    }
+    .codex-tile svg {display: block; max-width: 100%; height: auto;}
+    .codex-tile strong {
+        font-size: .68rem; line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+    .codex-tile small {font-size: .64rem; color: #d9e4f1;}
+    .codex-tile.locked {
+        background: #121a23; border-style: dashed;
+        color: #8c9aa8;
+    }
+    .codex-lock {font-size: 1.6rem; opacity: .65;}
+    .codex-detail {
+        border: 1px solid #49647d; border-radius: 12px;
+        background: #172a3e; padding: 12px;
     }
     .empty-slot {border-style: dashed; opacity: .5;}
     .empty-slot span {font-size: 1.6rem;}
@@ -308,38 +335,87 @@ def market_card_html(game: Game, item) -> str:
 
 
 def codex_screen(game: Game) -> None:
-    """Show compact collection progress without changing game state."""
+    """Browse compact discoveries and inspect a selected dragon."""
     summary = codex_summary(game, HUMAN)
     st.caption(
         f"Discovered {summary['discovered']} of {summary['total']} "
         f"dragons · {summary['owned']} currently owned"
     )
+    progress = family_progress(game, HUMAN)
+    st.caption(
+        "  ·  ".join(
+            f"{ELEMENT_EMOJI[entry['element']]} "
+            f"{entry['element']} {entry['discovered']}/8"
+            for entry in progress
+        )
+    )
     family = st.selectbox(
         "Dragon family",
-        ["Flame", "Tide", "Grove", "Storm", "Stone", "Shadow"],
+        list(ELEMENT_EMOJI),
         key="codex_family",
     )
+    family_count = next(
+        item["discovered"] for item in progress
+        if item["element"] == family
+    )
+    st.progress(
+        family_count / 8,
+        text=f"{family}: {family_count} of 8 discovered",
+    )
     entries = codex_entries(game, HUMAN, family)
-    columns = st.columns(2, gap="small")
-    for index, item in enumerate(entries):
-        with columns[index % 2]:
-            if item["status"] == "Unknown":
-                st.markdown("**🔒 Undiscovered dragon**")
-                st.caption("Acquire this dragon to reveal its story.")
+    columns = st.columns(4, gap="small")
+    for index, entry in enumerate(entries):
+        with columns[index % 4]:
+            if entry["status"] == "Unknown":
+                st.markdown(
+                    '<div class="codex-tile locked" '
+                    'aria-label="Undiscovered dragon">'
+                    '<span class="codex-lock">🔒</span>'
+                    '<small>Unknown</small></div>',
+                    unsafe_allow_html=True,
+                )
                 continue
-            artwork = dragon_svg(
-                family, 56, item["variant"]
-            )
+            art = dragon_svg(family, 70, entry["variant"])
             st.markdown(
-                f'<span class="card-art">{artwork}</span>'
-                f'<strong>{escape(item["name"])}</strong>',
+                '<div class="codex-tile">'
+                f'{art}<strong>{escape(entry["name"])}</strong>'
+                f'<small>{entry["status"]}</small></div>',
                 unsafe_allow_html=True,
             )
-            st.caption(
-                f'{item["status"]} · ⚔ {item["power"]}'
-                f' · 🏆 {item["prestige"]}'
-            )
-            st.caption(item["lore"])
+            if st.button(
+                "View", key=f"codex_view_{entry['card_id']}",
+                use_container_width=True,
+            ):
+                st.session_state.codex_selected = entry["card_id"]
+
+    known = {
+        item["card_id"]: item
+        for item in entries if item["status"] != "Unknown"
+    }
+    selected = st.session_state.get("codex_selected")
+    if selected not in known:
+        if known:
+            st.caption("Select View to inspect a discovered dragon.")
+        return
+
+    entry = known[selected]
+    card = game.cards[selected]
+    st.divider()
+    st.markdown(f"**📖 {entry['name']} · {family} dragon**")
+    art_col, info_col = st.columns([1, 2], gap="small")
+    with art_col:
+        st.markdown(
+            dragon_svg(family, 180, entry["variant"]),
+            unsafe_allow_html=True,
+        )
+    with info_col:
+        st.caption(
+            f"{entry['status']} · ⚔ Power {card.power} · "
+            f"🏆 Prestige {card.prestige}"
+        )
+        st.caption(f"✨ {DRAGON_ABILITIES.get(card.effect, 'No ability')}")
+        st.write(entry["lore"])
+
 
 
 def preview_swap(game: Game, incoming, outgoing) -> int:
