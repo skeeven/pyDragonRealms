@@ -88,7 +88,7 @@ def test_gallery_ui_has_selection_and_compact_locked_tiles():
         "codex-tile locked",
         'entry["status"] == "Unknown"',
         "codex_selected",
-        "dragon_svg(family, 180",
+        "dragon_art_html(selected, family, 180",
         "st.progress(",
     ):
         assert required in code
