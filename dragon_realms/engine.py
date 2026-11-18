@@ -8,6 +8,8 @@ from random import Random
 from typing import Any
 from uuid import uuid4
 
+from .dragon_identity import dragon_name
+
 
 class RuleError(ValueError):
     """Raised when a player attempts an illegal move."""
@@ -250,6 +252,7 @@ class Game:
             self._record(
                 "auction_won", player=winner, card=item.uid,
                 card_name=self.cards[item.card_id].name,
+                card_id=item.card_id,
                 amount=best, round=self.round,
             )
         self.bids.clear()
@@ -378,7 +381,7 @@ class Game:
         self._record(
             "deployed", player=pid, card=reserve_uid,
             card_name=self.cards[incoming.card_id].name,
-            round=self.round,
+            card_id=incoming.card_id, round=self.round,
         )
 
     def act(self, pid: str, action: str, **kwargs: Any) -> None:
@@ -388,6 +391,7 @@ class Game:
         if player.actions_left <= 0:
             raise RuleError("No actions remaining")
         action_card = ""
+        acquired_dragon_id = ""
         prestige_earned = 0
         if action in ("bond", "build", "quest"):
             zone = (
@@ -419,7 +423,9 @@ class Game:
                 raise RuleError("Dragon deck empty")
             card = self.cards[self.decks["dragon"][-1]]
             self._charge(player, card.cost)
-            player.reserve.append(self._draw("dragon"))
+            recruited = self._draw("dragon")
+            player.reserve.append(recruited)
+            acquired_dragon_id = recruited.card_id
         elif action == "meditate":
             if len(player.reserve) >= 7 or len(self.decks["dragon"]) < 2:
                 raise RuleError("Cannot meditate")
@@ -429,6 +435,7 @@ class Game:
             self._charge(player, {"crystal": 2})
             drawn = [self._draw("dragon"), self._draw("dragon")]
             player.reserve.append(drawn[keep])
+            acquired_dragon_id = drawn[keep].card_id
         elif action == "build":
             if len(player.buildings) >= 3:
                 raise RuleError("Building capacity reached")
@@ -483,6 +490,7 @@ class Game:
         self._record(
             "action", player=pid, action=action,
             round=self.round, card_name=action_card,
+            acquired_dragon_id=acquired_dragon_id,
             prestige=prestige_earned,
         )
 
@@ -597,7 +605,8 @@ def make_catalog() -> dict[str, Card]:
                       "storm_boost" if element == "Storm" else
                       "stone_guard" if element == "Stone" else
                       "shadow_bonus")
-            cards[key] = Card(key, "dragon", f"{element} Wyrm {index + 1}",
+            cards[key] = Card(key, "dragon",
+                              dragon_name(element, index + 1),
                               element, power, 1 + index % 4,
                               {"crystal": 2 + power}, effect)
     effects = ("produce:crystal", "produce:ember", "produce:aether",
