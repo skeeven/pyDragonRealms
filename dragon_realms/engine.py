@@ -91,7 +91,8 @@ class Game:
     networking, persistence, clock, or framework dependencies.
     """
 
-    def __init__(self, player_ids: list[str], seed: int = 0,\n                 max_rounds: int = 6):
+    def __init__(self, player_ids: list[str], seed: int = 0,
+                 max_rounds: int = 6):
         if not 3 <= len(player_ids) <= 6 or len(set(player_ids)) != len(player_ids):
             raise RuleError("Requires 3–6 distinct players")
         if not 3 <= max_rounds <= 12:\n            raise RuleError("Game length must be 3–12 rounds")\n        self.max_rounds = max_rounds\n        self.rng = Random(seed)
