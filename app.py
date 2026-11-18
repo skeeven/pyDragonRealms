@@ -404,7 +404,7 @@ def codex_screen(game: Game) -> None:
     art_col, info_col = st.columns([1, 2], gap="small")
     with art_col:
         st.markdown(
-            dragon_art_html(selected, family, 180),
+            dragon_art_html(selected, family, 180, portrait=True),
             unsafe_allow_html=True,
         )
     with info_col:
