@@ -48,6 +48,28 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Save and resume (v0.13)
+
+Use **Save and resume** in the Streamlit sidebar. Click **Download saved
+game** to save a portable JSON file to your computer. To resume later,
+open the app, upload the JSON file, and click **Restore uploaded game**.
+
+A save retains the current round and phase, all player resources and cards,
+auction state, quests, decks, score history, and the bot random-number
+state. The saved data is independent of the browser session. You can
+restore saved games at the market, actions, or finished scoreboard.
+
+Save files contain gameplay data and may reveal opponents' hidden bids;
+do not share them during a competitive match. Files are validated and
+size-limited when loaded. This is **manual save/resume**, not automatic
+cloud storage or autosave.
+
+```bash
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Strategy tuning (v0.11)
 
 The Builder bot estimates a building's **remaining-match value**, factoring
