@@ -58,15 +58,28 @@ def test_compact_quest_panels_keep_all_actions():
     """Quest requirements, rewards, reasons and completion still render."""
     function = app_function("action_screen")
     source = ast.get_source_segment(app_source(), function)
+
+    # Inspect parsed calls rather than quote-sensitive source text:
+    # f-strings use single quotes within their expressions.
+    requirement_keys = {
+        call.args[0].value
+        for call in ast.walk(function)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Attribute)
+        and call.func.attr == "get"
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "req"
+        and call.args
+        and isinstance(call.args[0], ast.Constant)
+    }
+    assert {"power", "element", "distinct"} <= requirement_keys
+
     for expected in (
-        'req.get("power", 0)',
-        'req.get("element")',
-        'req.get("distinct", 0)',
-        'cost_label(rewards)',
+        "cost_label(rewards)",
         'preview["reasons"]',
         'preview["dragon_names"]',
         'preview["dragon_uids"]',
-        'perform(',
+        "perform(",
     ):
         assert expected in source
     assert "Listed prestige includes any Shadow bonuses" not in source
