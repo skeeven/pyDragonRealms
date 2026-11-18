@@ -10,6 +10,20 @@ python -m pip install -e '.[dev]'
 python -m pytest -q
 ```
 
+## Streamlit visual prototype (v0.6)
+
+```bash
+python3 -m pip install -e '.[dev,ui]'
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Play a six-round match against three computer Wardens using a visual
+scoreboard, sealed auctions, deployment, quest and building actions, and
+contextual suggestions. The game lives in Streamlit session state; closing
+or resetting the session loses the match. Save/resume, full card art, and
+proper reveal-and-choose meditation are future work.
+
 ## Example
 
 ```python
