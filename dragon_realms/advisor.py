@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from itertools import combinations
 from typing import Any
 
 from .bots import quest_options
@@ -43,10 +44,21 @@ def quest_previews(game: Game, pid: str) -> list[dict[str, Any]]:
              if not dragon.exhausted]
     bonus = int(any(game.cards[b.card_id].effect == "quest_power"
                     for b in player.buildings))
-    max_power = sum(sorted(
-        (game.cards[d.card_id].power + d.bond for d in ready),
-        reverse=True,
-    )[:3]) + bonus
+    prism = any(
+        game.cards[r.card_id].effect == "prism"
+        for r in player.relics
+    )
+    max_power = max(
+        (
+            team_power(game, team) + bonus
+            + int(prism and len({
+                game.cards[d.card_id].element for d in team
+            }) >= 3)
+            for size in range(1, min(3, len(ready)) + 1)
+            for team in combinations(ready, size)
+        ),
+        default=0,
+    )
     previews = []
 
     for item in game.quests:
