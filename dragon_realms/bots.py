@@ -16,17 +16,44 @@ def value(game: Game, item) -> float:
     return card.prestige + 0.45 * card.power + ability_bonus + 0.5 * quest_bonus
 
 
+def _team_value(game: Game, pid: str) -> float:
+    """Evaluate current points and near-term quest opportunities."""
+    immediate = game.score(pid)
+    options = list(quest_options(game, pid))
+    quest_value = max((reward for _, _, reward in options), default=0)
+    return immediate + 0.4 * quest_value
+
+
 def deploy_best(game: Game, pid: str) -> None:
+    """Choose a deployment based on the whole team, not card rank."""
     player = game.players[pid]
     if not player.reserve or player.swapped:
         return
-    candidate = max(player.reserve, key=lambda d: value(game, d))
     if len(player.deployed) < 5:
-        game.deploy(pid, candidate.uid)
+        best = max(
+            player.reserve,
+            key=lambda dragon: value(game, dragon),
+        )
+        game.deploy(pid, best.uid)
         return
-    weakest = min(player.deployed, key=lambda d: value(game, d))
-    if not weakest.exhausted and value(game, candidate) > value(game, weakest):
-        game.deploy(pid, candidate.uid, weakest.uid)
+
+    baseline = _team_value(game, pid)
+    selected = None
+    best_gain = 0.0
+    for incoming in player.reserve:
+        for index, outgoing in enumerate(player.deployed):
+            if outgoing.exhausted:
+                continue
+            player.deployed[index] = incoming
+            try:
+                gain = _team_value(game, pid) - baseline
+            finally:
+                player.deployed[index] = outgoing
+            if gain > best_gain:
+                best_gain = gain
+                selected = (incoming.uid, outgoing.uid)
+    if selected:
+        game.deploy(pid, selected[0], selected[1])
 
 
 def quest_options(game: Game, pid: str):
