@@ -247,7 +247,11 @@ class Game:
                 self._grant(player, {"crystal": 1})
                 player.rebate_used = True
             self.market.remove(item)
-            self._record("auction_won", player=winner, card=item.uid, amount=best)
+            self._record(
+                "auction_won", player=winner, card=item.uid,
+                card_name=self.cards[item.card_id].name,
+                amount=best, round=self.round,
+            )
         self.bids.clear()
         self.phase = Phase.TRADE
         self._record("market_resolved")
@@ -371,7 +375,11 @@ class Game:
             player.deployed.remove(outgoing)
             player.reserve.append(outgoing)
         player.swapped = True
-        self._record("deployed", player=pid, card=reserve_uid)
+        self._record(
+            "deployed", player=pid, card=reserve_uid,
+            card_name=self.cards[incoming.card_id].name,
+            round=self.round,
+        )
 
     def act(self, pid: str, action: str, **kwargs: Any) -> None:
         """Execute one Warden action; adapter determines seat/action ordering."""
@@ -379,6 +387,16 @@ class Game:
         player = self._player(pid)
         if player.actions_left <= 0:
             raise RuleError("No actions remaining")
+        action_card = ""
+        prestige_earned = 0
+        if action in ("bond", "build", "quest"):
+            zone = (
+                player.deployed if action == "bond"
+                else self.blueprints if action == "build"
+                else self.quests
+            )
+            target = self._find(zone, kwargs["uid"])
+            action_card = self.cards[target.card_id].name
         if action == "channel":
             gains = kwargs["gains"]
             if (set(gains) - set(RESOURCES) or
@@ -451,9 +469,10 @@ class Game:
                 self.cards[d.card_id].effect == "shadow_bonus"
                 for d in dragons
             )
-            player.quest_prestige += (
+            prestige_earned = (
                 quest.reward.get("prestige", 0) + shadow_bonus
             )
+            player.quest_prestige += prestige_earned
             player.quests_completed += 1
             self._grant(player, {k: v for k, v in quest.reward.items()
                                  if k in RESOURCES})
@@ -461,7 +480,11 @@ class Game:
         else:
             raise RuleError("Unknown action")
         player.actions_left -= 1
-        self._record("action", player=pid, action=action)
+        self._record(
+            "action", player=pid, action=action,
+            round=self.round, card_name=action_card,
+            prestige=prestige_earned,
+        )
 
     def end_round(self) -> None:
         self._require(Phase.ACTIONS)
