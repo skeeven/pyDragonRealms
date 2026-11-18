@@ -9,6 +9,75 @@ from itertools import combinations
 from .engine import Game, RuleError
 
 
+BOND_COSTS = (
+    {"ember": 2},
+    {"ember": 2, "aether": 1},
+    {"ember": 3, "aether": 2},
+)
+
+
+def _affordable(resources: dict[str, int],
+                cost: dict[str, int]) -> bool:
+    """Check whether a player can afford a chosen action."""
+    return all(resources.get(key, 0) >= amount
+               for key, amount in cost.items())
+
+
+def _building_value(game: Game, pid: str, item) -> float:
+    """Estimate a building's permanent and remaining-round value."""
+    card = game.cards[item.card_id]
+    player = game.players[pid]
+    remaining = game.max_rounds - game.round
+    effect = card.effect
+    bonus = 0.0
+    if effect == "warden_hall":
+        bonus = len(player.deployed)
+    elif effect == "quest_power":
+        bonus = 1.7 * remaining
+    elif effect.startswith("produce:"):
+        resource = effect.split(":", 1)[1]
+        weight = {"crystal": 0.65, "ember": 0.55,
+                  "aether": 0.7}[resource]
+        bonus = remaining * weight
+    elif effect == "rebate":
+        bonus = min(2.5, remaining * 0.4)
+    opportunity_cost = 0.3 * sum(card.cost.values())
+    return card.prestige + bonus - opportunity_cost
+
+
+def _best_building(game: Game, pid: str):
+    """Return the most useful affordable building, if any."""
+    player = game.players[pid]
+    if len(player.buildings) >= 3:
+        return None
+    affordable = [
+        item for item in game.blueprints
+        if _affordable(
+            player.resources, game.cards[item.card_id].cost
+        )
+    ]
+    return max(
+        affordable,
+        key=lambda item: _building_value(game, pid, item),
+        default=None,
+    )
+
+
+def _best_quest(game: Game, pid: str):
+    """Choose a rewarding quest team without wasting ready dragons."""
+    options = list(quest_options(game, pid))
+    return max(
+        options,
+        key=lambda option: (
+            option[2],
+            -len(option[1]),
+            -sum(game.cards[d.card_id].power + d.bond
+                 for d in option[1]),
+        ),
+        default=None,
+    )
+
+
 def value(game: Game, item) -> float:
     card = game.cards[item.card_id]
     ability_bonus = int(card.effect == "stone_guard")
@@ -91,61 +160,88 @@ def quest_options(game: Game, pid: str):
 
 
 def choose_action(game: Game, pid: str, strategy: str) -> str:
+    """Choose legal actions while balancing quest and setup value."""
     player = game.players[pid]
-    options = list(quest_options(game, pid))
-    if options:
-        quest, dragons, _ = max(
-            options, key=lambda x: (x[2], -len(x[1])))
-        game.act(pid, "quest", uid=quest.uid,
-                 dragons=[d.uid for d in dragons])
-        return "quest"
+    quest = _best_quest(game, pid)
+    building = _best_building(game, pid)
+    remaining = game.max_rounds - game.round
 
-    if strategy in ("balanced", "builder") and len(player.buildings) < 3:
-        affordable = [b for b in game.blueprints
-                      if all(player.resources.get(k, 0) >= v
-                             for k, v in game.cards[b.card_id].cost.items())]
-        if affordable:
-            target = max(affordable, key=lambda b: value(game, b))
-            game.act(pid, "build", uid=target.uid)
+    # A Builder invests in useful permanent effects when they can
+    # outweigh this turn's best quest. As the match ends, immediate
+    # prestige becomes more important than future production.
+    if strategy == "builder" and building is not None:
+        value_now = _building_value(game, pid, building)
+        quest_now = quest[2] if quest else 0
+        if value_now >= quest_now + 0.6:
+            game.act(pid, "build", uid=building.uid)
             return "build"
 
+    if quest:
+        item, dragons, _ = quest
+        game.act(
+            pid, "quest", uid=item.uid,
+            dragons=[dragon.uid for dragon in dragons],
+        )
+        return "quest"
+
+    if strategy in ("balanced", "builder") and building is not None:
+        game.act(pid, "build", uid=building.uid)
+        return "build"
+
     if strategy in ("bonding", "balanced"):
-        costs = ({"ember": 2}, {"ember": 2, "aether": 1},
-                 {"ember": 3, "aether": 2})
-        candidates = [d for d in player.deployed if d.bond < 3 and
-                      all(player.resources.get(k, 0) >= v
-                          for k, v in costs[d.bond].items())]
+        candidates = [
+            dragon for dragon in player.deployed
+            if dragon.bond < 3
+            and _affordable(
+                player.resources, BOND_COSTS[dragon.bond]
+            )
+        ]
         if candidates:
-            target = max(candidates, key=lambda d:
-                         (d.bond, value(game, d)))
+            target = max(
+                candidates,
+                key=lambda dragon: (
+                    dragon.bond,
+                    value(game, dragon),
+                ),
+            )
             game.act(pid, "bond", uid=target.uid)
             return "bond"
 
-    # Reserve dragons are inactive: do not keep recruiting into a
-    # crowded reserve when the team can only change once per round.
-    if strategy == "collector" and len(player.reserve) < 2:
-        if game.decks["dragon"] and game.round < game.max_rounds:
+    # Collectors recruit only when they can reasonably deploy the
+    # dragon before the end. Otherwise, spend an action scoring.
+    if strategy == "collector" and len(player.reserve) == 0:
+        if (game.decks["dragon"] and remaining > 1
+                and len(player.deployed) < 5):
             card = game.cards[game.decks["dragon"][-1]]
-            if all(player.resources.get(k, 0) >= v
-                   for k, v in card.cost.items()):
+            if _affordable(player.resources, card.cost):
                 game.act(pid, "recruit")
                 return "recruit"
 
-    # Every strategy can take a scoring building when its preferred
-    # move is unavailable instead of endlessly collecting resources.
-    if len(player.buildings) < 3:
-        affordable = [
-            item for item in game.blueprints
-            if all(player.resources.get(key, 0) >= amount
-                   for key, amount
-                   in game.cards[item.card_id].cost.items())
-        ]
-        if affordable:
-            target = max(affordable, key=lambda item: value(game, item))
-            game.act(pid, "build", uid=target.uid)
-            return "build"
+    if building is not None:
+        game.act(pid, "build", uid=building.uid)
+        return "build"
 
-    # Channel the resource most useful to the current strategy.
+    # If useful construction is one resource away, channel it.
+    if strategy == "builder" and len(player.buildings) < 3:
+        candidates = sorted(
+            game.blueprints,
+            key=lambda item: _building_value(game, pid, item),
+            reverse=True,
+        )
+        if candidates:
+            cost = game.cards[candidates[0].card_id].cost
+            deficits = {
+                key: max(0, amount - player.resources.get(key, 0))
+                for key, amount in cost.items()
+            }
+            target = max(
+                deficits, key=deficits.get, default="aether"
+            )
+            if deficits.get(target, 0) > 0:
+                gains = {target: 2}
+                game.act(pid, "channel", gains=gains)
+                return "channel"
+
     gains = (
         {"crystal": 2} if strategy == "collector" else
         {"ember": 2} if strategy == "bonding" else
