@@ -48,6 +48,45 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Illustrated dragon portraits (v0.19)
+
+The market, deployed/reserve cards, and Dragon Codex now support local
+WebP illustrations through `dragon_realms/art_assets.py`. When a portrait
+is available, it takes precedence over the existing SVG design. Missing
+images automatically use the original SVG; no gameplay or save schema
+changes are involved.
+
+The first showcase art pack includes these files:
+
+- `assets/dragons/stone/granitehide.webp`
+- `assets/dragons/storm/stormspire.webp`
+- `assets/dragons/grove/mossback.webp`
+
+**Important:** The three binary portraits are provided as a separate
+downloadable `dragon_realms_v019_artwork.zip` attachment, not yet committed
+to GitHub. Download the ZIP and extract it into the repository root
+(the ZIP contains the correct `assets/dragons/` structure):
+
+```bash
+unzip -o ~/Downloads/dragon_realms_v019_artwork.zip -d .
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+If you want these images in GitHub as well, commit them after extraction:
+
+```bash
+git add assets/dragons/
+git commit -m "art: add first three illustrated dragon portraits"
+git push origin main
+```
+
+The Granitehide portrait is original generated artwork; Stormspire is a
+crop from a generated concept; Mossback is an adapted painted portrait
+and will eventually receive its own independently designed art. These
+images are initial visual prototypes rather than the complete set of
+48 finished illustrations.
+
 ## Dragon Codex Gallery (v0.18)
 
 The Codex now shows **eight compact gallery tiles** per element in a
