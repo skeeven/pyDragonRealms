@@ -4,12 +4,14 @@ Run with: streamlit run app.py
 """
 from __future__ import annotations
 
+from html import escape
 from random import Random
 from secrets import randbelow
 
 import streamlit as st
 
 from dragon_realms.advisor import chapter, quest_previews, recommendation
+from dragon_realms.artwork import PALETTES, dragon_svg
 from dragon_realms.bots import (
     choose_action,
     deploy_best,
@@ -59,15 +61,37 @@ st.markdown(
         padding: 10px 14px;
     }
     .dragon-slot {
-        min-height: 132px; padding: 9px 6px;
-        border: 1px solid #46617a; border-radius: 10px;
-        background: #142638; text-align: center;
+        min-height: 172px; padding: 8px 5px;
+        border: 1px solid var(--dragon-line, #46617a);
+        border-radius: 12px;
+        background: linear-gradient(160deg, var(--dragon-tint, #182b3d),
+                                    #142638 72%);
+        text-align: center;
         display: flex; flex-direction: column;
-        justify-content: center; gap: 4px;
+        align-items: center; justify-content: center; gap: 3px;
+        overflow: hidden;
     }
-    .dragon-slot strong {font-size: .85rem; line-height: 1.1;}
-    .dragon-slot small {font-size: .73rem; color: #c0d1dd;}
-    .dragon-icon {font-size: 1.55rem;}
+    .dragon-slot svg {
+        display: block; width: min(100%, 120px);
+        height: auto; max-height: 86px;
+        filter: drop-shadow(0 3px 8px #0005);
+    }
+    .dragon-slot strong {
+        font-size: .79rem; line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+    .dragon-slot small {font-size: .70rem; color: #e2ebf5;}
+    .dragon-slot .dragon-ability {
+        color: #f0dcaa; min-height: 1.05rem; font-size: .64rem;
+    }
+    .dragon-slot.is-resting {opacity: .65; filter: grayscale(.38);}
+    .card-art {
+        display: inline-flex; vertical-align: middle;
+        align-items: center; margin: 0 8px 0 0;
+        border-radius: 9px; overflow: hidden;
+    }
+    .card-art svg {display: block;}
+    .element-key {font-size: .77rem; opacity: .9;}
     .empty-slot {border-style: dashed; opacity: .5;}
     .empty-slot span {font-size: 1.6rem;}
     </style>
@@ -112,19 +136,26 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
                 continue
             dragon = dragons[index]
             card = game.cards[dragon.card_id]
-            symbol = ELEMENT_EMOJI.get(card.element, "🐉")
             exhausted = " · Resting" if dragon.exhausted else ""
             ability = DRAGON_ABILITIES.get(card.effect, "")
-            title = ability.replace('"', "&quot;")
+            title = escape(ability, quote=True)
+            name = escape(card.name)
+            palette = PALETTES.get(card.element)
+            color = palette[0] if palette else "#46617a"
+            tint = palette[3] if palette else "#142638"
+            resting = " is-resting" if dragon.exhausted else ""
+            art = dragon_svg(card.element, 112)
             st.markdown(
-                f'<div class="dragon-slot" title="{title}">'
-                f'<div class="dragon-icon">{symbol}</div>'
-                f'<strong>{card.name}</strong>'
+                f'<div class="dragon-slot{resting}" title="{title}" '
+                f'style="--dragon-line:{color};--dragon-tint:{tint}">'
+                f'{art}'
+                f'<strong>{name}</strong>'
                 f'<small>{card.element}{exhausted}</small>'
                 f'<small>⚔ {card.power + dragon.bond} '
                 f'· 🏆 {card.prestige} '
                 f'· 🤝 {dragon.bond}</small>'
-                f'<small>{ABILITY_SHORT.get(card.effect, "")}</small>'
+                f'<small class="dragon-ability">'
+                f'{escape(ABILITY_SHORT.get(card.effect, ""))}</small>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -168,8 +199,15 @@ def card_panel(game: Game, item, extra: str = "") -> None:
     """Display a compact card without relying on external images."""
     card = game.cards[item.card_id]
     element = f" · {card.element}" if card.element else ""
-    st.markdown(f"**🐉 {card.name}**" if card.kind == "dragon"
-                else f"**{card.name}**")
+    if card.kind == "dragon":
+        art = dragon_svg(card.element, 64)
+        st.markdown(
+            f'<span class="card-art">{art}</span>'
+            f'<strong>{escape(card.name)}</strong>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(f"**{card.name}**")
     if card.kind == "dragon":
         st.caption(
             f"{card.element} · Power {card.power} · "
