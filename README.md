@@ -24,6 +24,21 @@ contextual suggestions. The game lives in Streamlit session state; closing
 or resetting the session loses the match. Save/resume, full card art, and
 proper reveal-and-choose meditation are future work.
 
+## Dragon abilities (v0.9)
+
+Nonstarter dragons now specialize by element:
+
+- **Flame:** produce 1 Ember each gather phase.
+- **Tide:** produce 1 Crystal each gather phase.
+- **Grove:** produce 1 Aether each gather phase.
+- **Storm:** gain 1 extra power while assigned to a quest.
+- **Stone:** gain 1 additional prestige while deployed.
+- **Shadow:** earn 1 additional quest prestige when assigned to a quest.
+
+Effects apply per qualifying dragon. Starter Flame and Starter Tide do not
+have special abilities. Quest guidance, bot selection, and score breakdowns
+reflect these effects. This is a first balance pass, not a finalized ruleset.
+
 ## Guided quests and strategy (v0.8)
 
 The Streamlit action panel now includes a Warden advisor, quest requirements,
