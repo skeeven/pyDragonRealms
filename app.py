@@ -20,6 +20,7 @@ from dragon_realms.engine import (
     Phase,
     RuleError,
 )
+from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
 
 HUMAN = "You"
@@ -580,7 +581,58 @@ def main() -> None:
         if st.button("Start new game", type="primary"):
             start_game(int(seed), rounds)
             st.rerun()
-        st.caption("Matches remain in this browser session.")
+        st.divider()
+        st.subheader("Save and resume")
+        if "game" in st.session_state:
+            save_text = export_session(
+                st.session_state.game,
+                st.session_state.rng,
+                st.session_state.get("auction", []),
+            )
+            st.download_button(
+                "💾 Download saved game",
+                data=save_text,
+                file_name=(
+                    f"dragon-realms-round-"
+                    f"{st.session_state.game.round}.json"
+                ),
+                mime="application/json",
+                use_container_width=True,
+            )
+        saved_file = st.file_uploader(
+            "Load a saved game (.json)",
+            type=["json"],
+            key="saved_game_upload",
+        )
+        if st.button(
+            "Restore uploaded game",
+            disabled=saved_file is None,
+            use_container_width=True,
+        ):
+            try:
+                game, rng, auction = import_session(
+                    saved_file.getvalue()
+                )
+                if set(game.players) != {HUMAN, *BOTS}:
+                    raise ValueError(
+                        "Save does not match this game's players"
+                    )
+            except (ValueError, UnicodeError) as exc:
+                st.error(f"Could not restore game: {exc}")
+            else:
+                st.session_state.game = game
+                st.session_state.rng = rng
+                st.session_state.auction = auction
+                st.session_state.notice = (
+                    f"Restored round {game.round} of "
+                    f"{game.max_rounds}."
+                )
+                st.rerun()
+        st.caption(
+            "Save a JSON file to your computer and upload it "
+            "later to resume. An unsaved browser session can "
+            "still be lost."
+        )
         with st.expander("Rules overview"):
             st.write(
                 "Bid for cards, deploy dragons, then take two actions "
