@@ -24,6 +24,19 @@ contextual suggestions. The game lives in Streamlit session state; closing
 or resetting the session loses the match. Save/resume, full card art, and
 proper reveal-and-choose meditation are future work.
 
+## Guided quests and strategy (v0.8)
+
+The Streamlit action panel now includes a Warden advisor, quest requirements,
+ready-team suggestions, and explanations for unavailable quests.
+Quest previews are read-only and use the same eligibility rules as the engine.
+Completing a quest costs one action, gives the listed rewards, and exhausts
+its selected dragons until the following round.
+
+The advisor is a heuristic, not an optimal-play solver. It prioritizes
+achievable quests and affordable buildings and adapts its context to early,
+middle, and late game. Match length is selectable (6, 8, or 10 rounds, with
+8 as the Streamlit default).
+
 ## Example
 
 ```python
