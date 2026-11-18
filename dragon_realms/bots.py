@@ -41,14 +41,24 @@ def quest_options(game: Game, pid: str):
         for size in range(1, min(3, len(ready)) + 1):
             for dragons in combinations(ready, size):
                 elements = {game.cards[d.card_id].element for d in dragons}
-                power = sum(game.cards[d.card_id].power + d.bond
-                            for d in dragons) + power_bonus
+                power = sum(
+                    game.cards[d.card_id].power + d.bond
+                    + int(game.cards[d.card_id].effect == "storm_boost")
+                    for d in dragons
+                ) + power_bonus
                 power += int(prism and len(elements) >= 3)
                 if (power >= req.get("power", 0)
                         and (not req.get("element")
                              or req["element"] in elements)
                         and len(elements) >= req.get("distinct", 0)):
-                    yield quest, dragons, card.reward.get("prestige", 0)
+                    shadow_bonus = sum(
+                        game.cards[d.card_id].effect == "shadow_bonus"
+                        for d in dragons
+                    )
+                    yield (
+                        quest, dragons,
+                        card.reward.get("prestige", 0) + shadow_bonus,
+                    )
 
 
 def choose_action(game: Game, pid: str, strategy: str) -> str:
@@ -97,8 +107,11 @@ def choose_action(game: Game, pid: str, strategy: str) -> str:
 def score_breakdown(game: Game, pid: str) -> dict[str, int]:
     """Calculate additive scoring components matching Game.score."""
     player = game.players[pid]
-    dragons = sum(game.cards[d.card_id].prestige
-                  for d in player.deployed)
+    dragons = sum(
+        game.cards[d.card_id].prestige
+        + int(game.cards[d.card_id].effect == "stone_guard")
+        for d in player.deployed
+    )
     bonds = sum((0, 0, 1, 3)[d.bond] for d in player.deployed)
     buildings = sum(game.cards[b.card_id].prestige
                     for b in player.buildings)
