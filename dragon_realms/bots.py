@@ -11,7 +11,9 @@ from .engine import Game, RuleError
 
 def value(game: Game, item) -> float:
     card = game.cards[item.card_id]
-    return card.prestige + 0.45 * card.power
+    ability_bonus = int(card.effect == "stone_guard")
+    quest_bonus = int(card.effect in ("storm_boost", "shadow_bonus"))
+    return card.prestige + 0.45 * card.power + ability_bonus + 0.5 * quest_bonus
 
 
 def deploy_best(game: Game, pid: str) -> None:
