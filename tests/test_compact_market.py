@@ -73,7 +73,7 @@ def test_market_card_helper_preserves_card_information():
         APP_PATH.read_text(encoding="utf-8"), helper
     )
     for marker in (
-        "dragon_svg(", "card.element", "card.power",
+        "dragon_art_html(", "card.element", "card.power",
         "card.prestige", "ABILITY_SHORT", "escape(",
     ):
         assert marker in source
