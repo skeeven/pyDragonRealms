@@ -38,7 +38,10 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1500px; padding-top: 0.7rem;}\n    h1 {font-size: 1.65rem !important;}\n    div[data-testid="stVerticalBlock"] {gap: 0.45rem;}\n    div[data-testid="stMetricValue"] {font-size: 1.45rem;}
+    .block-container {max-width: 1500px; padding-top: 0.7rem;}
+    h1 {font-size: 1.65rem !important;}
+    div[data-testid="stVerticalBlock"] {gap: 0.45rem;}
+    div[data-testid="stMetricValue"] {font-size: 1.45rem;}
     div[data-testid="stMetric"] {
         background: #15283a;
         border: 1px solid #35536a;
@@ -503,7 +506,7 @@ def main() -> None:
         )
         st.markdown(
             "**How to win:** Earn the most prestige after the final "
-            "rounds. Only deployed dragons count for dragon "
+            "round. Only deployed dragons count for dragon "
             "prestige; diversity can add synergy."
         )
     if "game" not in st.session_state:
