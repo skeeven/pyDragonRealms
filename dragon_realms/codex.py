@@ -84,3 +84,22 @@ def codex_summary(game: Game, pid: str) -> dict[str, int]:
         "owned": sum(item["status"] == "Owned" for item in entries),
         "total": len(entries),
     }
+
+
+def family_progress(game: Game, pid: str) -> list[dict]:
+    """Summarize discovery progress for each elemental family."""
+    result = []
+    for element in ELEMENTS:
+        entries = codex_entries(game, pid, element)
+        discovered = sum(
+            item["status"] != "Unknown" for item in entries
+        )
+        result.append({
+            "element": element,
+            "discovered": discovered,
+            "owned": sum(
+                item["status"] == "Owned" for item in entries
+            ),
+            "total": len(entries),
+        })
+    return result
