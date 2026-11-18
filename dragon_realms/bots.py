@@ -121,15 +121,38 @@ def choose_action(game: Game, pid: str, strategy: str) -> str:
             game.act(pid, "bond", uid=target.uid)
             return "bond"
 
-    if strategy == "collector" and len(player.reserve) < 7:
-        if game.decks["dragon"]:
+    # Reserve dragons are inactive: do not keep recruiting into a
+    # crowded reserve when the team can only change once per round.
+    if strategy == "collector" and len(player.reserve) < 2:
+        if game.decks["dragon"] and game.round < game.max_rounds:
             card = game.cards[game.decks["dragon"][-1]]
             if all(player.resources.get(k, 0) >= v
                    for k, v in card.cost.items()):
                 game.act(pid, "recruit")
                 return "recruit"
 
-    game.act(pid, "channel", gains={"ember": 1, "aether": 1})
+    # Every strategy can take a scoring building when its preferred
+    # move is unavailable instead of endlessly collecting resources.
+    if len(player.buildings) < 3:
+        affordable = [
+            item for item in game.blueprints
+            if all(player.resources.get(key, 0) >= amount
+                   for key, amount
+                   in game.cards[item.card_id].cost.items())
+        ]
+        if affordable:
+            target = max(affordable, key=lambda item: value(game, item))
+            game.act(pid, "build", uid=target.uid)
+            return "build"
+
+    # Channel the resource most useful to the current strategy.
+    gains = (
+        {"crystal": 2} if strategy == "collector" else
+        {"ember": 2} if strategy == "bonding" else
+        {"aether": 2} if strategy == "builder" else
+        {"crystal": 1, "ember": 1}
+    )
+    game.act(pid, "channel", gains=gains)
     return "channel"
 
 
