@@ -38,7 +38,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1250px; padding-top: 1.5rem;}
+    .block-container {max-width: 1500px; padding-top: 0.7rem;}\n    h1 {font-size: 1.65rem !important;}\n    div[data-testid="stVerticalBlock"] {gap: 0.45rem;}\n    div[data-testid="stMetricValue"] {font-size: 1.45rem;}
     div[data-testid="stMetric"] {
         background: #15283a;
         border: 1px solid #35536a;
@@ -487,7 +487,7 @@ def finish_round(game: Game) -> None:
 def main() -> None:
     """Render a session-local single-player match."""
     st.title("🐉 Dragon Realms")
-    st.caption("Visual prototype · You versus three rival Wardens")
+    st.caption("Build your dragon team → complete quests → earn prestige")
     with st.sidebar:
         st.header("Game controls")
         seed = st.number_input(
@@ -509,7 +509,7 @@ def main() -> None:
         start_game(0)
     game = st.session_state.game
     player = game.players[HUMAN]
-    st.progress(game.round / 6, text=f"Round {game.round} of 6")
+    st.progress(game.round / 6, text=f"Round {game.round}/6 · {game.phase.value.title()}")
     columns = st.columns(5)
     for column, (name, value) in zip(
         columns,
@@ -525,20 +525,21 @@ def main() -> None:
     notice = st.session_state.get("notice")
     if notice:
         st.info(notice)
-    st.subheader("🏅 Scoreboard")
-    score_columns = st.columns(4)
-    for column, (pid, score) in zip(
-        score_columns, game.scores().items()
-    ):
-        column.metric(pid, score)
+    with st.expander("🏅 Rival scores"):
+        score_columns = st.columns(4)
+        for column, (pid, score) in zip(
+            score_columns, game.scores().items()
+        ):
+            column.metric(pid, score)
     if game.phase == Phase.FINISHED:
         st.success(
             f"Game over! Winner: {', '.join(game.winners())}"
         )
-        st.json({
-            pid: score_breakdown(game, pid)
-            for pid in game.players
-        })
+        st.dataframe(
+            [dict(Warden=pid, **score_breakdown(game, pid),
+                  Total=game.score(pid)) for pid in game.players],
+            hide_index=True, use_container_width=True,
+        )
         return
     if game.phase == Phase.MARKET:
         market_screen(game)
@@ -546,42 +547,63 @@ def main() -> None:
     if game.phase != Phase.ACTIONS:
         st.error(f"Unexpected game phase: {game.phase.value}")
         return
-    with st.expander("Auction results", expanded=True):
-        results = st.session_state.get("auction", [])
-        if not results:
-            st.write("No cards were won.")
-        for item in results:
-            st.write(
-                f"{item['winner']} won {item['card']} "
-                f"for {item['amount']} Crystal."
-            )
-    st.subheader("Your deployed dragons")
-    dragon_columns = st.columns(5)
-    for index, item in enumerate(player.deployed):
-        with dragon_columns[index]:
-            card_panel(game, item)
-    with st.expander(
-        f"Reserve dragons ({len(player.reserve)})"
-    ):
-        if not player.reserve:
-            st.caption("No dragons in reserve.")
-        for item in player.reserve:
-            card_panel(game, item)
-    with st.expander("Your buildings and relics"):
-        for item in player.buildings + player.relics:
-            card_panel(game, item)
-    with st.expander("Scoring breakdown"):
-        st.json(score_breakdown(game, HUMAN))
-    deploy_screen(game)
-    st.divider()
-    if player.actions_left:
-        action_screen(game)
-    else:
-        st.success("Your two actions are complete.")
-        if st.button(
-            "End round · Let rivals act", type="primary"
+    board, controls = st.columns([1, 1.4], gap="medium")
+    with board:
+        st.markdown("#### 🐲 Your dragon team")
+        dragon_columns = st.columns(2)
+        for index, item in enumerate(player.deployed):
+            with dragon_columns[index % 2]:
+                card_panel(game, item)
+        with st.expander(
+            f"Reserve ({len(player.reserve)}) · Buildings "
+            f"({len(player.buildings)}) · Relics ({len(player.relics)})"
         ):
-            finish_round(game)
+            for item in (
+                player.reserve + player.buildings + player.relics
+            ):
+                card_panel(game, item)
+        with st.expander("🏅 Scoring details"):
+            st.write(score_breakdown(game, HUMAN))
+        with st.expander("Auction recap"):
+            results = st.session_state.get("auction", [])
+            for item in results:
+                st.write(
+                    f"{item['winner']} won {item['card']} "
+                    f"for {item['amount']} Crystal."
+                )
+            if not results:
+                st.caption("No cards were won.")
+    with controls:
+        with st.expander("📖 How to play", expanded=game.round == 1):
+            st.write(
+                "**Your goal:** Finish six rounds with the most "
+                "prestige. Dragons only score while deployed. "
+                "Different elements can earn synergy bonuses."
+            )
+            st.write(
+                "**Each round:** 1) Bid for cards. "
+                "2) Deploy or swap one dragon for free. "
+                "3) Take two actions. "
+                "4) Rivals act and everyone gathers resources."
+            )
+            st.write(
+                "**Starting strategy:** Deploy a strong dragon, "
+                "complete achievable quests, and build when "
+                "affordable. Bonds boost quest power; channeling "
+                "prepares for future turns."
+            )
+        if not player.swapped and player.reserve:
+            deploy_screen(game)
+        elif player.swapped:
+            st.caption("✓ Dragon deployment used this round")
+        if player.actions_left:
+            action_screen(game)
+        else:
+            st.success("Your two actions are complete.")
+            if st.button(
+                "End round · Let rivals act", type="primary"
+            ):
+                finish_round(game)
 
 
 if __name__ == "__main__":
