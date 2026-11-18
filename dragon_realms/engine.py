@@ -95,7 +95,10 @@ class Game:
                  max_rounds: int = 6):
         if not 3 <= len(player_ids) <= 6 or len(set(player_ids)) != len(player_ids):
             raise RuleError("Requires 3–6 distinct players")
-        if not 3 <= max_rounds <= 12:\n            raise RuleError("Game length must be 3–12 rounds")\n        self.max_rounds = max_rounds\n        self.rng = Random(seed)
+        if not 3 <= max_rounds <= 12:
+            raise RuleError("Game length must be 3–12 rounds")
+        self.max_rounds = max_rounds
+        self.rng = Random(seed)
         self.players = {pid: Player(pid) for pid in player_ids}
         self.order = list(player_ids)
         self.rng.shuffle(self.order)
