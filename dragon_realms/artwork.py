@@ -69,7 +69,9 @@ def dragon_svg(element: str, size: int = 112,
     primary, secondary, highlight, background = PALETTES[element]
     title = escape(f"{element} dragon illustration", quote=True)
     sigil = ELEMENT_SIGILS[element]
-    gradient_id = f"dragon-body-{element.lower()}-{variant}"
+    gradient_id = f"dragon-body-{element.lower()}"
+    if variant:
+        gradient_id += f"-{variant}"
     # Eight different crest shapes make numbered dragons distinctive
     # without requiring image assets or changes to the card rules.
     crests = (
