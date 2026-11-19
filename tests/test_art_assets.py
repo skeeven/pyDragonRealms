@@ -78,3 +78,37 @@ def test_artwork_html_does_not_mutate_gameplay():
     score = game.scores()
     dragon_art_html("dragon_stone_1", "Stone", 80)
     assert game.scores() == score
+
+
+def test_thumbnail_and_portrait_resolve_separately(
+    tmp_path, monkeypatch
+):
+    """Card crops and full Codex portraits use different image files."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    folder = tmp_path / "stone"
+    folder.mkdir()
+    (folder / "granitehide-thumb.webp").write_bytes(b"THUMB")
+    (folder / "granitehide.webp").write_bytes(b"PORTRAIT")
+
+    thumbnail = dragon_art_html("dragon_stone_1", "Stone", 90)
+    portrait = dragon_art_html(
+        "dragon_stone_1", "Stone", 240, portrait=True
+    )
+    assert base64.b64encode(b"THUMB").decode("ascii") in thumbnail
+    assert base64.b64encode(b"PORTRAIT").decode("ascii") in portrait
+    assert "object-fit:cover" in thumbnail
+    assert "object-fit:contain" in portrait
+    assert 'height="90"' in thumbnail
+    assert 'height="240"' not in portrait
+
+
+def test_old_artwork_pack_without_thumbnail_still_works(
+    tmp_path, monkeypatch
+):
+    """Existing v0.19 portrait assets remain backward compatible."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    folder = tmp_path / "grove"
+    folder.mkdir()
+    (folder / "mossback.webp").write_bytes(b"OLD-PORTRAIT")
+    result = dragon_art_html("dragon_grove_1", "Grove", 90)
+    assert base64.b64encode(b"OLD-PORTRAIT").decode("ascii") in result
