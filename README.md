@@ -48,6 +48,34 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon artwork expansion — Batch 4 (v0.23)
+
+The optional artwork registry now recognizes **31 of 50 dragon
+illustrations (62%)**, including both starter dragons.
+
+Eight new illustrations are available for **Pyrelash, Scorchscale,
+Deepglide, Oakheart, Thundermaw, Galestrike, Slatehorn, and
+Gloomwing**. Each has a full WebP portrait and a small square thumbnail
+for market cards, deployed dragons, reserve, and the Codex.
+
+This is a **separate incremental artwork pack**. Download
+`dragon_realms_v023_artwork.zip` from the ChatGPT handoff and extract
+it on top of the v0.20–v0.22 files:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v023_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+The remaining 19 collectible dragon cards continue using SVG
+illustrations until their art is created. Card IDs, power, prestige,
+abilities, auctions, scoring, and save formats remain unchanged.
+The GitHub update includes mappings and tests; artwork binaries are
+distributed in the ZIP for local installation.
+
 ## Dragon artwork expansion — Batch 3 (v0.22)
 
 Eight new collectible dragon portraits have been added to the optional
