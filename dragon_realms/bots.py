@@ -196,12 +196,71 @@ def quest_options(game: Game, pid: str):
                     )
 
 
+def _collector_development(game: Game, pid: str, building):
+    """Spend Collector actions on dragons and points before stockpiling.
+
+    Meditation is a blind draw in the current engine. Keep index zero
+    without inspecting the order of the two hidden cards.
+    """
+    player = game.players[pid]
+    remaining = game.max_rounds - game.round
+    deck = game.decks["dragon"]
+    needs_dragon = (
+        remaining >= 2
+        and len(player.deployed) < 5
+        and not player.reserve
+    )
+    if needs_dragon and deck:
+        next_card = game.cards[deck[-1]]
+        recruit_cost = next_card.cost
+        can_recruit = _affordable(player.resources, recruit_cost)
+        can_meditate = (
+            len(deck) >= 2 and player.resources["crystal"] >= 2
+        )
+        # Favor guaranteed recruitment when affordable and economical;
+        # use the cheaper blind meditation for an expensive draw.
+        expensive = recruit_cost.get("crystal", 0) >= 6
+        reserve_crystal = player.resources["crystal"]
+        if can_meditate and (
+            not can_recruit
+            or (expensive and reserve_crystal < 10)
+        ):
+            game.act(pid, "meditate", keep=0)
+            return "meditate"
+        if can_recruit:
+            game.act(pid, "recruit")
+            return "recruit"
+
+    if building is not None:
+        # A high-value building is still a better immediate use of
+        # spare resources than a speculative bond.
+        building_value = _building_value(game, pid, building)
+        if building_value >= 3.0:
+            game.act(pid, "build", uid=building.uid)
+            return "build"
+
+    if len(player.deployed) >= 4 or remaining <= 2 or not deck:
+        dragon, bond_value = _best_bond(game, pid)
+        if dragon is not None:
+            build_value = (
+                _building_value(game, pid, building)
+                if building is not None else float("-inf")
+            )
+            if bond_value > build_value:
+                game.act(pid, "bond", uid=dragon.uid)
+                return "bond"
+
+    if building is not None:
+        game.act(pid, "build", uid=building.uid)
+        return "build"
+    return None
+
+
 def choose_action(game: Game, pid: str, strategy: str) -> str:
     """Choose legal actions while balancing quest and setup value."""
     player = game.players[pid]
     quest = _best_quest(game, pid)
     building = _best_building(game, pid)
-    remaining = game.max_rounds - game.round
 
     # A Builder invests in useful permanent effects when they can
     # outweigh this turn's best quest. As the match ends, immediate
@@ -258,15 +317,12 @@ def choose_action(game: Game, pid: str, strategy: str) -> str:
             game.act(pid, "bond", uid=target.uid)
             return "bond"
 
-    # Collectors recruit only when they can reasonably deploy the
-    # dragon before the end. Otherwise, spend an action scoring.
-    if strategy == "collector" and len(player.reserve) == 0:
-        if (game.decks["dragon"] and remaining > 1
-                and len(player.deployed) < 5):
-            card = game.cards[game.decks["dragon"][-1]]
-            if _affordable(player.resources, card.cost):
-                game.act(pid, "recruit")
-                return "recruit"
+    # Collector values a playable dragon, opportunistic meditation,
+    # and lasting prestige over repeatedly banking unused Crystal.
+    if strategy == "collector":
+        collector_action = _collector_development(game, pid, building)
+        if collector_action is not None:
+            return collector_action
 
     if building is not None:
         game.act(pid, "build", uid=building.uid)
