@@ -64,6 +64,9 @@ DRAGON_ART = {
     "dragon_stone_6": "stone/ironridge.webp",
     "dragon_shadow_6": "shadow/moonshade.webp",
     "dragon_shadow_7": "shadow/voidscale.webp",
+    "dragon_stone_7": "stone/obsidian.webp",
+    "dragon_stone_8": "stone/mountainborn.webp",
+    "dragon_shadow_8": "shadow/nocturne.webp",
 }
 
 DRAGON_THUMBNAILS = {
