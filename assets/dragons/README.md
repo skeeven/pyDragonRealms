@@ -1,3 +1,39 @@
+# Dragon artwork — Batch 6 (v0.25)
+
+Eight more collectible portraits with square thumbnails are available
+in `dragon_realms_v025_artwork.zip`:
+
+| Dragon | Card ID | Portrait path |
+| --- | --- | --- |
+| Abyssal | `dragon_tide_8` | `tide/abyssal.webp` |
+| Verdant | `dragon_grove_7` | `grove/verdant.webp` |
+| Wildbloom | `dragon_grove_8` | `grove/wildbloom.webp` |
+| Voltwing | `dragon_storm_6` | `storm/voltwing.webp` |
+| Tempestral | `dragon_storm_7` | `storm/tempestral.webp` |
+| Ironridge | `dragon_stone_6` | `stone/ironridge.webp` |
+| Moonshade | `dragon_shadow_6` | `shadow/moonshade.webp` |
+| Voidscale | `dragon_shadow_7` | `shadow/voidscale.webp` |
+
+The paths above are relative to `assets/dragons/`. Each portrait
+has a matching `-thumb.webp`. The v0.25 ZIP contains **16 WebP files**,
+and is incremental: retain the v0.20–v0.24 artwork when installing.
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v025_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+There are now 47 illustrated dragons out of 50, including the two
+starters. Only **Obsidian, Mountainborn, and Nocturne** remain without
+custom portraits. SVG fallback handles them safely. The artwork ZIP
+is delivered separately from GitHub's code commits; game mechanics
+and save compatibility are unchanged.
+
+---
+
 # Dragon artwork — Batch 5 (v0.24)
 
 Eight additional collectible portraits and matching card thumbnails
