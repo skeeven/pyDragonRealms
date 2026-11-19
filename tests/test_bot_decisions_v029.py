@@ -52,19 +52,19 @@ def test_collector_recruits_when_budget_can_cover_dragon():
     assert player.reserve[0].card_id == next_id
 
 
-def test_collector_meditates_instead_of_expensive_recruit():
-    """A limited Crystal supply favors the cheaper draw-two action."""
-    game = ready_match()
-    prevent_other_scoring(game)
-    player = game.players["A"]
-    next_id = game.decks["dragon"][-1]
-    card = game.cards[next_id]
-    game.cards[next_id] = replace(
-        card, cost={"crystal": 6}
-    )
-    player.resources["crystal"] = 7
-    assert choose_action(game, "A", "collector") == "meditate"
-    assert len(player.reserve) == 1
+def test_meditation_choice_does_not_peek_at_deck_top():
+    """Hidden dragon cost must not change a blind-draw decision."""
+    for cost in (3, 7):
+        game = ready_match()
+        prevent_other_scoring(game)
+        player = game.players["A"]
+        next_id = game.decks["dragon"][-1]
+        game.cards[next_id] = replace(
+            game.cards[next_id], cost={"crystal": cost}
+        )
+        player.resources["crystal"] = 7
+        assert choose_action(game, "A", "collector") == "meditate"
+        assert len(player.reserve) == 1
 
 
 def test_collector_bonds_when_dragon_team_is_full():
@@ -116,3 +116,32 @@ def test_new_bot_choices_keep_match_scoring_consistent():
     for stats in result["strategies"].values():
         assert sum(stats["average_actions"].values()) == 16
     assert result["games"] == 4
+
+
+def test_collector_recruits_when_only_one_card_remains():
+    """Meditation needs two cards; a safe recruit uses the last one."""
+    game = ready_match()
+    prevent_other_scoring(game)
+    game.decks["dragon"][:] = game.decks["dragon"][-1:]
+    player = game.players["A"]
+    player.resources["crystal"] = 12
+    assert choose_action(game, "A", "collector") == "recruit"
+    assert len(player.reserve) == 1
+    assert not game.decks["dragon"]
+
+
+def test_collector_prioritizes_ready_quest_over_meditation():
+    """A confirmed scoring quest takes precedence over blind drawing."""
+    game = ready_match()
+    player = game.players["A"]
+    quest = game.quests[0]
+    card = game.cards[quest.card_id]
+    game.cards[card.id] = replace(
+        card,
+        requirement={"power": 1, "element": "Flame"},
+        reward={"prestige": 4},
+    )
+    player.resources["crystal"] = 7
+    assert choose_action(game, "A", "collector") == "quest"
+    assert player.quest_prestige == 4
+    assert not player.reserve
