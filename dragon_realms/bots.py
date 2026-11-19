@@ -211,20 +211,16 @@ def _collector_development(game: Game, pid: str, building):
         and not player.reserve
     )
     if needs_dragon and deck:
-        next_card = game.cards[deck[-1]]
-        recruit_cost = next_card.cost
-        can_recruit = _affordable(player.resources, recruit_cost)
-        can_meditate = (
-            len(deck) >= 2 and player.resources["crystal"] >= 2
+        crystal = player.resources["crystal"]
+        can_meditate = len(deck) >= 2 and crystal >= 2
+        # An unseen recruit could cost as much as any catalog dragon.
+        # Use the published cost ceiling, never the hidden deck order.
+        can_recruit = all(
+            _affordable(player.resources, card.cost)
+            for card in game.cards.values()
+            if card.kind == "dragon"
         )
-        # Favor guaranteed recruitment when affordable and economical;
-        # use the cheaper blind meditation for an expensive draw.
-        expensive = recruit_cost.get("crystal", 0) >= 6
-        reserve_crystal = player.resources["crystal"]
-        if can_meditate and (
-            not can_recruit
-            or (expensive and reserve_crystal < 10)
-        ):
+        if can_meditate and crystal < 10:
             game.act(pid, "meditate", keep=0)
             return "meditate"
         if can_recruit:
