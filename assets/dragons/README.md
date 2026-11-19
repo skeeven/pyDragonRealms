@@ -1,3 +1,40 @@
+# Completed dragon art collection (v0.26)
+
+The final three original fantasy-dragon portraits are distributed in
+`dragon_realms_v026_artwork.zip`. Each has a full WebP portrait and
+a compact square thumbnail:
+
+| Dragon | Card ID | Portrait |
+| --- | --- | --- |
+| Obsidian | `dragon_stone_7` | `stone/obsidian.webp` |
+| Mountainborn | `dragon_stone_8` | `stone/mountainborn.webp` |
+| Nocturne | `dragon_shadow_8` | `shadow/nocturne.webp` |
+
+Paths above are relative to `assets/dragons/`; thumbnail paths use
+the same stem with `-thumb.webp`. Obsidian's card element is **Stone**
+even though its design has lava and black volcanic-glass scales.
+Mountainborn is a snow-capped alpine Stone dragon, and Nocturne is a
+star-streaked moonlit Shadow dragon.
+
+The new ZIP includes only these **six** files. Install it over the
+previous v0.20–v0.25 packs, preserving all existing artwork:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v026_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+All **50 dragons** now have registered artwork (48 collectibles and
+two starters). If an image file is not installed, the app still falls
+back to its matching SVG automatically. No game rules or save-file
+formats changed. The binaries ship in the downloadable ZIP, not the
+GitHub code-only commits.
+
+---
+
 # Dragon artwork — Batch 6 (v0.25)
 
 Eight more collectible portraits with square thumbnails are available
