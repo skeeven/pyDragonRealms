@@ -10,23 +10,23 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_thirty_one_illustrated_dragons():
-    """The artwork registry maps 31 stable IDs to optional WebP files."""
+def test_registry_contains_thirty_nine_illustrated_dragons():
+    """Registered assets map to 39 canonical IDs and thumbnail paths."""
     from dragon_realms.engine import make_catalog
 
     catalog = make_catalog()
     expected_batch = {
-        "dragon_flame_3": "flame/pyrelash.webp",
-        "dragon_flame_5": "flame/scorchscale.webp",
-        "dragon_tide_4": "tide/deepglide.webp",
-        "dragon_grove_5": "grove/oakheart.webp",
-        "dragon_storm_3": "storm/thundermaw.webp",
-        "dragon_storm_4": "storm/galestrike.webp",
-        "dragon_stone_4": "stone/slatehorn.webp",
-        "dragon_shadow_4": "shadow/gloomwing.webp",
+        "dragon_flame_6": "flame/blazehorn.webp",
+        "dragon_flame_7": "flame/kindlefang.webp",
+        "dragon_tide_5": "tide/wavecaller.webp",
+        "dragon_tide_7": "tide/foamwing.webp",
+        "dragon_grove_6": "grove/bloomtail.webp",
+        "dragon_storm_5": "storm/skyshiver.webp",
+        "dragon_stone_5": "stone/cragheart.webp",
+        "dragon_shadow_5": "shadow/echofang.webp",
     }
-    assert len(art_assets.DRAGON_ART) == 31
-    assert len(art_assets.DRAGON_THUMBNAILS) == 31
+    assert len(art_assets.DRAGON_ART) == 39
+    assert len(art_assets.DRAGON_THUMBNAILS) == 39
     assert {
         card_id: art_assets.DRAGON_ART[card_id]
         for card_id in expected_batch
@@ -49,9 +49,9 @@ def test_missing_art_uses_original_svg(tmp_path, monkeypatch):
 
 def test_unillustrated_dragon_uses_svg_even_with_art_installed():
     """Unregistered dragons always retain their original SVG fallback."""
-    assert "dragon_flame_6" not in art_assets.DRAGON_ART
-    assert dragon_art_html("dragon_flame_6", "Flame", 80) == (
-        dragon_svg("Flame", 80, 6)
+    assert "dragon_shadow_8" not in art_assets.DRAGON_ART
+    assert dragon_art_html("dragon_shadow_8", "Shadow", 80) == (
+        dragon_svg("Shadow", 80, 8)
     )
 
 
@@ -291,3 +291,25 @@ def test_v023_artwork_has_no_duplicate_paths():
     thumbnail_paths = list(art_assets.DRAGON_THUMBNAILS.values())
     assert len(portrait_paths) == len(set(portrait_paths))
     assert len(thumbnail_paths) == len(set(thumbnail_paths))
+
+
+def test_v024_artwork_matches_canonical_card_names():
+    """All eight new portraits belong to the correct game dragons."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    names = {
+        "dragon_flame_6": "Blazehorn",
+        "dragon_flame_7": "Kindlefang",
+        "dragon_tide_5": "Wavecaller",
+        "dragon_tide_7": "Foamwing",
+        "dragon_grove_6": "Bloomtail",
+        "dragon_storm_5": "Skyshiver",
+        "dragon_stone_5": "Cragheart",
+        "dragon_shadow_5": "Echofang",
+    }
+    for card_id, name in names.items():
+        assert catalog[card_id].name == name
+        assert art_assets.DRAGON_ART[card_id].endswith(
+            f"/{name.lower()}.webp"
+        )
