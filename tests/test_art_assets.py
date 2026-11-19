@@ -39,10 +39,19 @@ def test_registry_contains_thirty_one_illustrated_dragons():
         )
 
 
-def test_missing_art_uses_original_svg():
-    """Artwork is optional, including on other dragon cards."""
+def test_missing_art_uses_original_svg(tmp_path, monkeypatch):
+    """Registered dragons use SVG when their image files are absent."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
     assert dragon_art_html("dragon_flame_5", "Flame", 80) == (
         dragon_svg("Flame", 80, 5)
+    )
+
+
+def test_unillustrated_dragon_uses_svg_even_with_art_installed():
+    """Unregistered dragons always retain their original SVG fallback."""
+    assert "dragon_flame_6" not in art_assets.DRAGON_ART
+    assert dragon_art_html("dragon_flame_6", "Flame", 80) == (
+        dragon_svg("Flame", 80, 6)
     )
 
 
