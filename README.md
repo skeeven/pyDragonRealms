@@ -48,6 +48,33 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon artwork expansion — Batch 5 (v0.24)
+
+The optional artwork system now supports **39 of 50 dragons
+(78%)**, including both starter dragons.
+
+The eight newly illustrated collectibles are **Blazehorn, Kindlefang,
+Wavecaller, Foamwing, Bloomtail, Skyshiver, Cragheart, and Echofang**.
+Each has a full WebP portrait for the Codex and a compact square
+thumbnail for the market, reserve, and active dragon cards.
+
+The `dragon_realms_v024_artwork.zip` contains only these eight new
+portraits and their thumbnails (16 files), so extract it on top of
+your existing v0.20–v0.23 artwork. From the repository root:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v024_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Image files are supplied in the separate ZIP rather than the text-only
+GitHub changes. The remaining 11 dragons use the original SVG
+fallback until their portraits are ready. Card IDs, abilities, and
+save-game compatibility are unchanged.
+
 ## Dragon artwork expansion — Batch 4 (v0.23)
 
 The optional artwork registry now recognizes **31 of 50 dragon
