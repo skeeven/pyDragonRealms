@@ -48,6 +48,38 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Complete dragon artwork collection (v0.26)
+
+The final three collectible dragons now have registered full-size
+illustrations and compact thumbnail artwork:
+
+- **Obsidian** (Stone): black volcanic-glass scales in a lava field
+- **Mountainborn** (Stone): immense stone guardian of alpine peaks
+- **Nocturne** (Shadow): moonlit dragon with violet star-streaked wings
+
+The collection now includes **50 of 50 dragon illustrations**:
+48 named collectibles plus Starter Flame and Starter Tide.
+
+Download the separate `dragon_realms_v026_artwork.zip` from the
+ChatGPT handoff. This pack is incremental: it includes only the
+three new portraits and their matching thumbnails. Keep the older
+v0.20–v0.25 assets installed, then run:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v026_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Artwork is optional at runtime. The SVG fallback still handles any
+uninstalled files, and existing save files, scoring, and abilities
+are unchanged. The 50 images are delivered in multiple art packs
+rather than embedded in the GitHub code-only commits. You can commit
+your locally installed `assets/dragons/` files to GitHub if you
+want the artwork deployed with the game.
+
 ## Dragon artwork expansion — Batch 6 (v0.25)
 
 The optional WebP artwork registry now covers **47 of 50 dragons
