@@ -10,26 +10,32 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_fifteen_illustrated_dragons():
-    """Stable game IDs map to all 15 optional illustrated portraits."""
-    assert art_assets.DRAGON_ART == {
-        "starter_flame": "flame/starter_flame.webp",
-        "starter_tide": "tide/starter_tide.webp",
-        "dragon_flame_8": "flame/infernos.webp",
-        "dragon_grove_1": "grove/mossback.webp",
-        "dragon_stone_1": "stone/granitehide.webp",
-        "dragon_storm_8": "storm/stormspire.webp",
-        "dragon_shadow_1": "shadow/duskveil.webp",
-        "dragon_flame_1": "flame/cinderwing.webp",
-        "dragon_tide_1": "tide/riptalon.webp",
-        "dragon_tide_2": "tide/mistfin.webp",
-        "dragon_grove_2": "grove/thornroot.webp",
-        "dragon_grove_3": "grove/fernwhisper.webp",
-        "dragon_storm_1": "storm/sparkcrest.webp",
-        "dragon_stone_2": "stone/flintjaw.webp",
-        "dragon_shadow_2": "shadow/nightwhisper.webp",
+def test_registry_contains_twenty_three_illustrated_dragons():
+    """All registered art paths correspond to stable existing card IDs."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    expected_batch = {
+        "dragon_flame_2": "flame/ashmaw.webp",
+        "dragon_flame_4": "flame/emberclaw.webp",
+        "dragon_tide_3": "tide/coralcrest.webp",
+        "dragon_tide_6": "tide/pearlscale.webp",
+        "dragon_grove_4": "grove/briarwing.webp",
+        "dragon_storm_2": "storm/cloudbreaker.webp",
+        "dragon_stone_3": "stone/boulderspine.webp",
+        "dragon_shadow_3": "shadow/umbraclaw.webp",
     }
-    assert len(art_assets.DRAGON_THUMBNAILS) == 15
+    assert len(art_assets.DRAGON_ART) == 23
+    assert len(art_assets.DRAGON_THUMBNAILS) == 23
+    assert {
+        key: art_assets.DRAGON_ART[key] for key in expected_batch
+    } == expected_batch
+    for card_id, path in art_assets.DRAGON_ART.items():
+        assert card_id in catalog
+        assert path.endswith(".webp")
+        assert art_assets.DRAGON_THUMBNAILS[card_id] == (
+            path.replace(".webp", "-thumb.webp")
+        )
 
 
 def test_missing_art_uses_original_svg():
@@ -223,3 +229,25 @@ def test_new_batch_all_elements_have_illustrated_options():
             and card_id.startswith("dragon_")
         ]
         assert matches, f"{element} has no collectible artwork"
+
+
+def test_v022_artwork_matches_eight_canonical_names():
+    """The next art batch names match the engine's dragon definitions."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    names = {
+        "dragon_flame_2": "Ashmaw",
+        "dragon_flame_4": "Emberclaw",
+        "dragon_tide_3": "Coralcrest",
+        "dragon_tide_6": "Pearlscale",
+        "dragon_grove_4": "Briarwing",
+        "dragon_storm_2": "Cloudbreaker",
+        "dragon_stone_3": "Boulderspine",
+        "dragon_shadow_3": "Umbraclaw",
+    }
+    for card_id, name in names.items():
+        assert catalog[card_id].name == name
+        assert art_assets.DRAGON_ART[card_id].endswith(
+            f"/{name.lower()}.webp"
+        )
