@@ -48,6 +48,35 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon artwork expansion — Batch 6 (v0.25)
+
+The optional WebP artwork registry now covers **47 of 50 dragons
+(94%)**, including the two starter dragons.
+
+This batch adds eight collectible illustrations: **Abyssal, Verdant,
+Wildbloom, Voltwing, Tempestral, Ironridge, Moonshade, and Voidscale**.
+As before, every dragon has one Codex portrait and a face-focused
+square thumbnail for the market, active board, and reserve.
+
+Download the `dragon_realms_v025_artwork.zip` from the ChatGPT handoff.
+This is an **incremental ZIP**, so retain your previous artwork
+from v0.20–v0.24. From the project root:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v025_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+The final three collectible dragons awaiting portraits are
+**Obsidian (Stone), Mountainborn (Stone), and Nocturne (Shadow)**.
+They continue using the original SVG fallback. All card IDs,
+mechanics, Codex counts, and save formats remain unchanged.
+The WebP binaries are distributed in the downloadable ZIP rather
+than committed through the GitHub text-file editor.
+
 ## Dragon artwork expansion — Batch 5 (v0.24)
 
 The optional artwork system now supports **39 of 50 dragons
