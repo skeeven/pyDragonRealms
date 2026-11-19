@@ -10,7 +10,7 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_forty_seven_illustrated_dragons():
+def test_registry_contains_all_fifty_illustrated_dragons():
     """Every registered portrait has a stable ID and matching thumbnail."""
     from dragon_realms.engine import make_catalog
 
@@ -25,8 +25,8 @@ def test_registry_contains_forty_seven_illustrated_dragons():
         "dragon_shadow_6": "shadow/moonshade.webp",
         "dragon_shadow_7": "shadow/voidscale.webp",
     }
-    assert len(art_assets.DRAGON_ART) == 47
-    assert len(art_assets.DRAGON_THUMBNAILS) == 47
+    assert len(art_assets.DRAGON_ART) == 50
+    assert len(art_assets.DRAGON_THUMBNAILS) == 50
     assert {
         card_id: art_assets.DRAGON_ART[card_id]
         for card_id in expected_batch
@@ -47,9 +47,12 @@ def test_missing_art_uses_original_svg(tmp_path, monkeypatch):
     )
 
 
-def test_unillustrated_dragon_uses_svg_even_with_art_installed():
-    """Unregistered dragons always retain their original SVG fallback."""
-    assert "dragon_shadow_8" not in art_assets.DRAGON_ART
+def test_final_dragon_without_installed_files_uses_svg(
+    tmp_path, monkeypatch
+):
+    """Even the last illustrated dragon falls back when files are absent."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    assert "dragon_shadow_8" in art_assets.DRAGON_ART
     assert dragon_art_html("dragon_shadow_8", "Shadow", 80) == (
         dragon_svg("Shadow", 80, 8)
     )
@@ -337,20 +340,46 @@ def test_v025_artwork_matches_canonical_card_names():
         )
 
 
-def test_last_three_dragons_still_have_svg_fallbacks():
-    """Remaining three non-illustrated collectibles are still supported."""
+def test_every_dragon_has_a_registered_portrait():
+    """All 48 collectible dragons and both starters have image mappings."""
     from dragon_realms.engine import make_catalog
 
     catalog = make_catalog()
-    missing = {
-        card_id
-        for card_id, card in catalog.items()
+    dragon_ids = {
+        card_id for card_id, card in catalog.items()
         if card.kind == "dragon"
-        and card_id.startswith("dragon_")
-        and card_id not in art_assets.DRAGON_ART
     }
-    assert missing == {
-        "dragon_stone_7",
-        "dragon_stone_8",
-        "dragon_shadow_8",
+    assert dragon_ids == set(art_assets.DRAGON_ART)
+    assert len(dragon_ids) == 50
+
+
+def test_final_three_artworks_match_canonical_names():
+    """Final portraits are assigned to the right Stone/Shadow dragons."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    final_cards = {
+        "dragon_stone_7": ("Obsidian", "stone/obsidian.webp"),
+        "dragon_stone_8": (
+            "Mountainborn", "stone/mountainborn.webp"
+        ),
+        "dragon_shadow_8": ("Nocturne", "shadow/nocturne.webp"),
     }
+    for card_id, (name, path) in final_cards.items():
+        assert catalog[card_id].name == name
+        assert art_assets.DRAGON_ART[card_id] == path
+
+
+def test_last_three_use_svg_if_portraits_are_missing(
+    tmp_path, monkeypatch
+):
+    """Old installations without v0.26 files must remain playable."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    for card_id, family, variant in (
+        ("dragon_stone_7", "Stone", 7),
+        ("dragon_stone_8", "Stone", 8),
+        ("dragon_shadow_8", "Shadow", 8),
+    ):
+        assert dragon_art_html(card_id, family, 80) == (
+            dragon_svg(family, 80, variant)
+        )
