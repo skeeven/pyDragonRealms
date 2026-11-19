@@ -31,6 +31,7 @@ from dragon_realms.engine import (
     RuleError,
 )
 from dragon_realms.history import leaderboard, match_history
+from dragon_realms.presentation import action_feedback
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
 
@@ -73,8 +74,11 @@ st.markdown(
         min-height: 154px; padding: 6px 5px;
         border: 1px solid var(--dragon-line, #46617a);
         border-radius: 12px;
-        background: linear-gradient(160deg, var(--dragon-tint, #182b3d),
-                                    #142638 72%);
+        background:
+            linear-gradient(140deg, #ffffff12, transparent 42%),
+            linear-gradient(160deg, var(--dragon-tint, #182b3d),
+                            #142638 72%);
+        box-shadow: inset 0 0 0 1px #ffffff0b, 0 3px 9px #0003;
         text-align: center;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 3px;
@@ -93,7 +97,21 @@ st.markdown(
     .dragon-slot .dragon-ability {
         color: #f0dcaa; min-height: 1.05rem; font-size: .64rem;
     }
-    .dragon-slot.is-resting {opacity: .65; filter: grayscale(.38);}
+    .dragon-slot.is-resting {opacity: .68; filter: grayscale(.3);}
+    .dragon-slot .dragon-stats {
+        display: flex; justify-content: center;
+        gap: 4px; flex-wrap: wrap; font-size: .67rem;
+    }
+    .dragon-slot .dragon-stats span {
+        border: 1px solid #ffffff22; border-radius: 5px;
+        padding: 1px 3px; background: #07162380;
+    }
+    .dragon-slot .dragon-status {
+        color: #f4dfa8; font-size: .64rem; font-weight: 650;
+    }
+    .dragon-slot:not(.empty-slot) {
+        border-top: 3px solid var(--dragon-line, #46617a);
+    }
     .card-art {
         display: inline-flex; vertical-align: middle;
         align-items: center; margin: 0 8px 0 0;
@@ -104,7 +122,9 @@ st.markdown(
     .market-card {
         border: 1px solid #35536a;
         border-left: 3px solid var(--card-accent, #35536a);
-        border-radius: 9px; background: #162532;
+        border-radius: 9px;
+        background: linear-gradient(125deg, #26394c, #162532 65%);
+        box-shadow: inset 0 1px #ffffff12;
         padding: 7px 9px; min-height: 95px;
     }
     .market-card-head {
@@ -135,8 +155,10 @@ st.markdown(
     }
     .codex-tile {
         min-height: 98px; padding: 6px 4px;
-        border: 1px solid #42566a; border-radius: 9px;
-        background: #172636; text-align: center;
+        border: 1px solid var(--codex-accent, #42566a);
+        border-radius: 9px;
+        background: linear-gradient(155deg, #26394a, #172636);
+        text-align: center;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 3px;
         overflow: hidden;
@@ -153,6 +175,8 @@ st.markdown(
         background: #121a23; border-style: dashed;
         color: #8c9aa8;
     }
+    .codex-tile:not(.locked) {border-top-width: 3px;}
+    .codex-progress {color: #f0dcaa;}
     .codex-lock {font-size: 1.6rem; opacity: .65;}
     .codex-detail {
         border: 1px solid #49647d; border-radius: 12px;
@@ -219,12 +243,17 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
                 f'style="--dragon-line:{color};--dragon-tint:{tint}">'
                 f'{art}'
                 f'<strong>{name}</strong>'
-                f'<small>{card.element}{exhausted}</small>'
-                f'<small>⚔ {card.power + dragon.bond} '
-                f'· 🏆 {card.prestige} '
-                f'· 🤝 {dragon.bond}</small>'
+                f'<small>{ELEMENT_EMOJI[card.element]} '
+                f'{escape(card.element)}</small>'
+                '<div class="dragon-stats">'
+                f'<span title="Quest power">⚔ {card.power + dragon.bond}</span>'
+                f'<span title="Base prestige">🏆 {card.prestige}</span>'
+                f'<span title="Bond level">🤝 {dragon.bond}</span>'
+                '</div>'
                 f'<small class="dragon-ability">'
                 f'{escape(ABILITY_SHORT.get(card.effect, ""))}</small>'
+                f'<small class="dragon-status">'
+                f'{"💤 Resting" if dragon.exhausted else ""}</small>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -241,6 +270,7 @@ def start_game(seed: int, rounds: int = 8) -> None:
         "prestige by completing quests and building your realm."
     )
     st.session_state.auction = []
+    st.session_state.notice_kind = "info"
 
 
 def label(game: Game, item) -> str:
@@ -376,7 +406,8 @@ def codex_screen(game: Game) -> None:
                 continue
             art = dragon_art_html(entry["card_id"], family, 70)
             st.markdown(
-                '<div class="codex-tile">'
+                f'<div class="codex-tile" '
+                f'style="--codex-accent:{PALETTES[family][0]}">'
                 f'{art}<strong>{escape(entry["name"])}</strong>'
                 f'<small>{entry["status"]}</small></div>',
                 unsafe_allow_html=True,
@@ -517,7 +548,19 @@ def market_screen(game: Game) -> None:
         game.begin_actions()
         for bot in BOTS:
             deploy_best(game, bot)
-        st.session_state.notice = "Auction resolved. Deploy a dragon next."
+        won = [
+            result["card"] for result in st.session_state.auction
+            if result["winner"] == HUMAN
+        ]
+        st.session_state.notice = (
+            "🏛️ Auction resolved · "
+            + (
+                "Won: " + ", ".join(won)
+                if won else "No cards won this round"
+            )
+            + ". Deploy a dragon if one is in reserve."
+        )
+        st.session_state.notice_kind = "success" if won else "info"
         st.rerun()
     except RuleError as exc:
         st.error(str(exc))
@@ -550,8 +593,10 @@ def deploy_screen(game: Game) -> None:
         if st.button("Deploy dragon", type="primary"):
             game.deploy(HUMAN, incoming.uid)
             st.session_state.notice = (
-                f"Deployed {label(game, incoming)}."
+                f"🐉 {label(game, incoming)} deployed! "
+                f"Prestige now {game.score(HUMAN)}."
             )
+            st.session_state.notice_kind = "success"
             st.rerun()
         return
     replacements = {
@@ -581,9 +626,10 @@ def deploy_screen(game: Game) -> None:
     if st.button("Confirm swap", type="primary"):
         game.deploy(HUMAN, incoming.uid, outgoing.uid)
         st.session_state.notice = (
-            f"Swapped {label(game, outgoing)} for "
+            f"🐉 Swapped {label(game, outgoing)} for "
             f"{label(game, incoming)} ({change:+d} prestige)."
         )
+        st.session_state.notice_kind = "success"
         st.rerun()
 
 
@@ -769,12 +815,14 @@ def perform(game: Game, action: str, **kwargs) -> None:
     """Run a human action and report a useful result."""
     try:
         before = game.score(HUMAN)
+        resources_before = dict(game.players[HUMAN].resources)
         game.act(HUMAN, action, **kwargs)
         change = game.score(HUMAN) - before
-        st.session_state.notice = (
-            f"{action.title()} completed. "
-            f"Prestige change: {change:+d}."
+        st.session_state.notice = action_feedback(
+            action, change, resources_before,
+            game.players[HUMAN].resources,
         )
+        st.session_state.notice_kind = "success"
         st.rerun()
     except RuleError as exc:
         st.error(str(exc))
@@ -792,8 +840,10 @@ def finish_round(game: Game) -> None:
             f"Round {game.round} begins. Your realm gained "
             "its new round resources."
         )
+        st.session_state.notice_kind = "info"
     else:
         st.session_state.notice = "The match is finished!"
+        st.session_state.notice_kind = "success"
     st.rerun()
 
 
@@ -951,6 +1001,7 @@ def main() -> None:
                         f"Restored round {game.round} of "
                         f"{game.max_rounds}."
                     )
+                    st.session_state.notice_kind = "info"
                     st.rerun()
             st.caption(
                 "Save a JSON file to your computer and upload it "
@@ -997,7 +1048,10 @@ def main() -> None:
     st.caption(chapter(game))
     notice = st.session_state.get("notice")
     if notice:
-        st.caption(f"ℹ️ {notice}")
+        if st.session_state.get("notice_kind") == "success":
+            st.success(notice, icon="✅")
+        else:
+            st.caption(f"ℹ️ {notice}")
 
     if game.phase == Phase.FINISHED:
         victory_screen(game)
