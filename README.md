@@ -48,6 +48,34 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Expanded dragon illustrations (v0.20)
+
+Seven dragons now have illustrated portraits and matching card
+thumbnails: **Starter Flame, Starter Tide, Infernos, Duskveil,
+Mossback, Granitehide, and Stormspire**. The two starter dragons get
+real artwork on every new match. Infernos and Duskveil add illustrated
+collectibles from Flame and Shadow families. The existing three
+portraits remain supported.
+
+The artwork ZIP contains all seven portraits and their thumbnails.
+Extract it over the repository root; it replaces previous v0.19 packs:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v020_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Only four of the seven images are new in v0.20; three are carried
+over from v0.19.1. All remaining dragon definitions still render using
+SVG fallbacks. This is incremental artwork coverage, not the full
+50-illustration target. Artwork files are delivered in a separate ZIP,
+not the GitHub text-only commits. Card rules, stats, auctions, and save
+formats are unchanged. The Codex still tracks 48 collectible dragons,
+excluding the two starter dragons.
+
 ## Illustrated dragon portraits (v0.19)
 
 The market, deployed/reserve cards, and Dragon Codex now support local
