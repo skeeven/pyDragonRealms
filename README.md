@@ -48,6 +48,34 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Fantasy card polish and action feedback (v0.27)
+
+The visual board now uses more distinctive elemental frames on active
+and reserve dragons, with softly layered backgrounds and a colored top
+border. Power, base prestige, and bond levels are separated into
+individual compact badges, and exhausted dragons display a clearer
+**Resting** status. Compact auction cards and the Codex gallery use
+coordinated layered backgrounds and element-colored accents.
+
+Action feedback is now tailored to the completed action. Quests,
+buildings, bonds, resource channeling, recruitment, and meditation
+report their confirmed prestige change plus actual Crystal, Ember,
+and Aether differences. Auction results name any cards the player
+won, and deployment highlights the new prestige total. Informational
+messages still use a less prominent style.
+
+The feedback formatter lives in
+`dragon_realms/presentation.py` and is tested independently.
+This update does **not** change game rules, auction bidding,
+scoring, save formats, or artwork file mappings.
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
 ## Complete dragon artwork collection (v0.26)
 
 The final three collectible dragons now have registered full-size
