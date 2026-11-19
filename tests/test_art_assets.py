@@ -10,8 +10,8 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_seven_illustrated_dragons():
-    """The artwork registry uses stable IDs for the seven portraits."""
+def test_registry_contains_fifteen_illustrated_dragons():
+    """Stable game IDs map to all 15 optional illustrated portraits."""
     assert art_assets.DRAGON_ART == {
         "starter_flame": "flame/starter_flame.webp",
         "starter_tide": "tide/starter_tide.webp",
@@ -20,8 +20,16 @@ def test_registry_contains_seven_illustrated_dragons():
         "dragon_stone_1": "stone/granitehide.webp",
         "dragon_storm_8": "storm/stormspire.webp",
         "dragon_shadow_1": "shadow/duskveil.webp",
+        "dragon_flame_1": "flame/cinderwing.webp",
+        "dragon_tide_1": "tide/riptalon.webp",
+        "dragon_tide_2": "tide/mistfin.webp",
+        "dragon_grove_2": "grove/thornroot.webp",
+        "dragon_grove_3": "grove/fernwhisper.webp",
+        "dragon_storm_1": "storm/sparkcrest.webp",
+        "dragon_stone_2": "stone/flintjaw.webp",
+        "dragon_shadow_2": "shadow/nightwhisper.webp",
     }
-    assert len(art_assets.DRAGON_THUMBNAILS) == 7
+    assert len(art_assets.DRAGON_THUMBNAILS) == 15
 
 
 def test_missing_art_uses_original_svg():
@@ -178,3 +186,40 @@ def test_existing_dragon_abilities_unchanged():
     assert catalog["starter_tide"].power == 1
     assert catalog["dragon_storm_8"].power == 3
     assert catalog["dragon_stone_1"].effect == "stone_guard"
+
+
+def test_new_batch_names_match_canonical_dragon_catalog():
+    """Artwork filenames correspond to actual named dragon cards."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    new_names = {
+        "dragon_flame_1": "Cinderwing",
+        "dragon_tide_1": "Riptalon",
+        "dragon_tide_2": "Mistfin",
+        "dragon_grove_2": "Thornroot",
+        "dragon_grove_3": "Fernwhisper",
+        "dragon_storm_1": "Sparkcrest",
+        "dragon_stone_2": "Flintjaw",
+        "dragon_shadow_2": "Nightwhisper",
+    }
+    for card_id, name in new_names.items():
+        assert catalog[card_id].name == name
+        assert art_assets.DRAGON_ART[card_id].endswith(
+            f"/{name.lower()}.webp"
+        )
+
+
+def test_new_batch_all_elements_have_illustrated_options():
+    """Every elemental family has at least one collectible illustration."""
+    from dragon_realms.engine import ELEMENTS, make_catalog
+
+    catalog = make_catalog()
+    for element in ELEMENTS:
+        matches = [
+            card_id
+            for card_id in art_assets.DRAGON_ART
+            if catalog[card_id].element == element
+            and card_id.startswith("dragon_")
+        ]
+        assert matches, f"{element} has no collectible artwork"
