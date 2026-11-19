@@ -115,6 +115,23 @@ def test_quest_bounty_requires_signature_dragon_on_team():
     assert player.resources["crystal"] == crystal_before
 
 
+def test_quest_advisor_shows_signature_bounty_reward():
+    """The suggested Wildbloom team includes the extra Aether reward."""
+    game = ready_match("dragon_grove_8")
+    quest = easy_quest(game, "Grove")
+    preview = next(
+        item for item in quest_previews(game, "You")
+        if item["uid"] == quest.uid
+    )
+    assert preview["ready"]
+    assert preview["reward"]["aether"] == 1
+    assert any(
+        item.uid in preview["dragon_uids"]
+        for item in game.players["You"].deployed
+        if item.card_id == "dragon_grove_8"
+    )
+
+
 def test_bounty_respects_resource_cap():
     """Bounty cannot push a resource above the normal cap."""
     game = ready_match("dragon_tide_7")
