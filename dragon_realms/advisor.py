@@ -28,7 +28,8 @@ def team_power(game: Game, dragons) -> int:
     """Calculate quest power with the same modifiers as the engine."""
     return sum(
         game.cards[d.card_id].power + d.bond
-        + int(game.cards[d.card_id].effect == "storm_boost")
+        + (2 if game.cards[d.card_id].effect == "flame_focus"
+           else int(game.cards[d.card_id].effect == "storm_boost"))
         for d in dragons
     )
 
