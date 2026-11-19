@@ -48,6 +48,30 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon artwork expansion — Batch 2 (v0.21)
+
+Eight new dragons have full illustrations and compact thumbnails:
+**Cinderwing, Riptalon, Mistfin, Thornroot, Fernwhisper, Sparkcrest,
+Flintjaw, and Nightwhisper**. This brings the illustrated total to
+15 of the 50 dragons (48 collectible cards plus 2 starters).
+Every elemental family now has at least one illustrated collectible.
+
+Install the additional v0.21 pack **on top of** your existing v0.20
+images; this ZIP contains only the eight new portraits:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v021_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Artwork uses the existing optional asset registry and SVG fallback
+when a file is absent. Images are delivered in the separate ZIP and
+may be committed to GitHub locally after installing. No changes to
+gameplay, card data, Codex counts, or saved-game compatibility.
+
 ## Expanded dragon illustrations (v0.20)
 
 Seven dragons now have illustrated portraits and matching card
