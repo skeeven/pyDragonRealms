@@ -1,3 +1,39 @@
+# Artwork expansion — Batch 3 (v0.22)
+
+Eight additional dragon portraits and face-focused thumbnails are
+provided in `dragon_realms_v022_artwork.zip`:
+
+| Dragon | Card ID | Portrait |
+| --- | --- | --- |
+| Ashmaw | `dragon_flame_2` | `flame/ashmaw.webp` |
+| Emberclaw | `dragon_flame_4` | `flame/emberclaw.webp` |
+| Coralcrest | `dragon_tide_3` | `tide/coralcrest.webp` |
+| Pearlscale | `dragon_tide_6` | `tide/pearlscale.webp` |
+| Briarwing | `dragon_grove_4` | `grove/briarwing.webp` |
+| Cloudbreaker | `dragon_storm_2` | `storm/cloudbreaker.webp` |
+| Boulderspine | `dragon_stone_3` | `stone/boulderspine.webp` |
+| Umbraclaw | `dragon_shadow_3` | `shadow/umbraclaw.webp` |
+
+All paths are relative to `assets/dragons/`. Each portrait also
+has a corresponding `-thumb.webp` file for the game board and market.
+This pack is **incremental** and should be installed on top of the
+v0.20 and v0.21 artwork packs.
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v022_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Total illustrated dragons: **23 of 50**, including two starters.
+Other cards retain SVG fallback. The game engine, balance, card IDs,
+collection tracking, and save files remain unchanged. Binary files
+are distributed in the artwork ZIP, not committed to GitHub.
+
+---
+
 # Artwork expansion (v0.21)
 
 Eight **additional** named dragon portraits are supplied in the
