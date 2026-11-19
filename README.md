@@ -48,6 +48,81 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Phase 1 gameplay completion (v0.30–v0.33)
+
+The four milestones below improve the core rules and opponent
+decisions without replacing the save format or existing card IDs.
+
+### v0.30 — Competitive AI balance
+
+Balanced and Bonding may meditate strategically when their deployed
+team is incomplete, there is time to use another dragon, and no
+quest has priority. Builder may also meditate when its preferred
+building and bonding actions are unavailable. These conservative
+acquisition rules preserve each bot's established strategy while
+helping them compete with Collector. **Balance is not yet
+statistically validated**: compare multiple seed ranges before
+claiming the strategies are evenly matched.
+
+### v0.31 — Reveal-and-choose Meditation
+
+Human players now spend 2 Crystal to reveal two real dragon cards,
+inspect the artwork, power, and ability, then keep either one. The
+other is discarded. The action is only consumed on the final choice,
+and no other action or end-of-round transition can skip that choice.
+Save files now optionally include pending meditation choices;
+pre-v0.31 JSON saves continue loading. The original one-call
+`game.act(pid, "meditate", keep=0)` API remains available for bot
+simulations, using the same underlying draw and resolve methods.
+
+### v0.32 — Quest insight and balance diagnostics
+
+Quest suggestions now show the selected team's effective power,
+the surplus above the quest requirement, and how many dragons remain
+ready afterward. The advisor recognizes power from signature dragon
+abilities, Quest Beacon, and Prism relics. A new read-only
+`dragon_realms.balance` module reports catalog coverage, ability
+distribution, relic and building counts, invalid card definitions,
+and the usual simulation statistics. This establishes a repeatable
+basis for future card-balance changes instead of guessing at buffs
+and nerfs.
+
+### v0.33 — Trade council and multiplayer foundation
+
+After the sealed auction, the Streamlit game now offers an **optional
+Trade council** before deployment. The human can propose a one-for-one
+swap of 1 or 2 Crystal, Ember, or Aether with a computer Warden.
+Bots automatically accept only resource swaps that improve their
+supply mix; rejected offers leave resources unchanged. You can
+skip negotiations and continue into the existing deployment/actions
+phase. Other players' resource totals are not displayed.
+
+The underlying engine already supports bilateral trades involving
+cards and resources between human-controlled seats, but **a
+simultaneous/networked human-multiplayer interface is not included**
+in the v0.33 Streamlit prototype. The new council deliberately
+handles only bot resource trades, and does not claim to implement
+remote multiplayer.
+
+### Upgrade, verify, and simulate
+
+```bash
+git pull origin main
+python3 -m pytest -q
+python3 -m dragon_realms.balance --games 500 --seed 0
+python3 -m dragon_realms.simulate --players 4 --games 500 --rounds 8
+python3 -m streamlit run app.py
+```
+
+The last user-verified test suite was **161 passing in v0.29**.
+The v0.30–v0.33 regression tests need to be executed after pulling;
+no new balance or win-rate claim is made until you run the updated
+simulator. The v0.29 comparison baseline across 1,500 games was:
+Collector approximately 42.0%, Balanced 21.5%, Builder 20.1%,
+Bonding 16.5%.
+
+---
+
 ## Smarter Collector and AI Meditation (v0.29)
 
 The Collector bot now spends fewer actions accumulating resources that
