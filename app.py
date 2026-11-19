@@ -227,7 +227,6 @@ def show_dragon_slots(game: Game, dragons, slots: int) -> None:
                 continue
             dragon = dragons[index]
             card = game.cards[dragon.card_id]
-            exhausted = " · Resting" if dragon.exhausted else ""
             ability = DRAGON_ABILITIES.get(card.effect, "")
             title = escape(
                 f"{ability} {dragon_lore(card.id)}", quote=True
