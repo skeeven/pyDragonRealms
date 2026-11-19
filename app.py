@@ -207,6 +207,9 @@ ABILITY_SHORT = {
     "storm_boost": "+1 quest power",
     "stone_guard": "+1 active prestige",
     "shadow_bonus": "+1 quest prestige",
+    "flame_focus": "+2 quest power",
+    "tide_bounty": "+1 Crystal / quest",
+    "grove_bounty": "+1 Aether / quest",
 }
 
 
