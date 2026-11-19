@@ -10,23 +10,23 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_thirty_nine_illustrated_dragons():
-    """Registered assets map to 39 canonical IDs and thumbnail paths."""
+def test_registry_contains_forty_seven_illustrated_dragons():
+    """Every registered portrait has a stable ID and matching thumbnail."""
     from dragon_realms.engine import make_catalog
 
     catalog = make_catalog()
     expected_batch = {
-        "dragon_flame_6": "flame/blazehorn.webp",
-        "dragon_flame_7": "flame/kindlefang.webp",
-        "dragon_tide_5": "tide/wavecaller.webp",
-        "dragon_tide_7": "tide/foamwing.webp",
-        "dragon_grove_6": "grove/bloomtail.webp",
-        "dragon_storm_5": "storm/skyshiver.webp",
-        "dragon_stone_5": "stone/cragheart.webp",
-        "dragon_shadow_5": "shadow/echofang.webp",
+        "dragon_tide_8": "tide/abyssal.webp",
+        "dragon_grove_7": "grove/verdant.webp",
+        "dragon_grove_8": "grove/wildbloom.webp",
+        "dragon_storm_6": "storm/voltwing.webp",
+        "dragon_storm_7": "storm/tempestral.webp",
+        "dragon_stone_6": "stone/ironridge.webp",
+        "dragon_shadow_6": "shadow/moonshade.webp",
+        "dragon_shadow_7": "shadow/voidscale.webp",
     }
-    assert len(art_assets.DRAGON_ART) == 39
-    assert len(art_assets.DRAGON_THUMBNAILS) == 39
+    assert len(art_assets.DRAGON_ART) == 47
+    assert len(art_assets.DRAGON_THUMBNAILS) == 47
     assert {
         card_id: art_assets.DRAGON_ART[card_id]
         for card_id in expected_batch
@@ -313,3 +313,44 @@ def test_v024_artwork_matches_canonical_card_names():
         assert art_assets.DRAGON_ART[card_id].endswith(
             f"/{name.lower()}.webp"
         )
+
+
+def test_v025_artwork_matches_canonical_card_names():
+    """All eight new art files correspond to real dragon names."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    names = {
+        "dragon_tide_8": "Abyssal",
+        "dragon_grove_7": "Verdant",
+        "dragon_grove_8": "Wildbloom",
+        "dragon_storm_6": "Voltwing",
+        "dragon_storm_7": "Tempestral",
+        "dragon_stone_6": "Ironridge",
+        "dragon_shadow_6": "Moonshade",
+        "dragon_shadow_7": "Voidscale",
+    }
+    for card_id, name in names.items():
+        assert catalog[card_id].name == name
+        assert art_assets.DRAGON_ART[card_id].endswith(
+            f"/{name.lower()}.webp"
+        )
+
+
+def test_last_three_dragons_still_have_svg_fallbacks():
+    """Remaining three non-illustrated collectibles are still supported."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    missing = {
+        card_id
+        for card_id, card in catalog.items()
+        if card.kind == "dragon"
+        and card_id.startswith("dragon_")
+        and card_id not in art_assets.DRAGON_ART
+    }
+    assert missing == {
+        "dragon_stone_7",
+        "dragon_stone_8",
+        "dragon_shadow_8",
+    }
