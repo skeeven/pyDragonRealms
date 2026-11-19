@@ -798,8 +798,13 @@ def action_screen(game: Game) -> None:
             st.caption(requirement + reward_text)
             if preview["ready"]:
                 st.caption(
+                    f"⚔ Team power {preview['team_power']} "
+                    f"(+{preview['power_surplus']} over requirement) "
+                    f"· {preview['ready_after']} dragons stay ready"
+                )
+                st.caption(
                     "✅ " + ", ".join(preview["dragon_names"])
-                    + " · Dragons rest after quest."
+                    + " · Selected dragons rest after quest."
                 )
                 if st.button(
                     f"Complete {preview['name']}",
