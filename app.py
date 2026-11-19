@@ -1127,9 +1127,11 @@ def main() -> None:
             )
         with st.expander("Rules overview"):
             st.write(
-                "Bid for cards, deploy dragons, then take two actions "
+                "Bid for cards, optionally trade resources with "
+                "computer Wardens, deploy dragons, then take two actions "
                 "per round. Deployed dragons score points and attempt "
-                "quests. Reserve dragons are inactive."
+                "quests. Meditation reveals two dragons; choose one "
+                "to keep. Reserve dragons are inactive."
             )
 
     if "game" not in st.session_state:
