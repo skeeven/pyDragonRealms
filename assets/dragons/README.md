@@ -1,3 +1,36 @@
+# Artwork expansion (v0.21)
+
+Eight **additional** named dragon portraits are supplied in the
+`dragon_realms_v021_artwork.zip` pack, each with a full WebP portrait
+and a square `-thumb.webp` image:
+
+| Dragon | Card ID | Relative asset path |
+| --- | --- | --- |
+| Cinderwing | `dragon_flame_1` | `flame/cinderwing.webp` |
+| Riptalon | `dragon_tide_1` | `tide/riptalon.webp` |
+| Mistfin | `dragon_tide_2` | `tide/mistfin.webp` |
+| Thornroot | `dragon_grove_2` | `grove/thornroot.webp` |
+| Fernwhisper | `dragon_grove_3` | `grove/fernwhisper.webp` |
+| Sparkcrest | `dragon_storm_1` | `storm/sparkcrest.webp` |
+| Flintjaw | `dragon_stone_2` | `stone/flintjaw.webp` |
+| Nightwhisper | `dragon_shadow_2` | `shadow/nightwhisper.webp` |
+
+**Keep the existing v0.20 pack installed**; v0.21 includes only these
+eight additions, not the seven previous dragons. All 16 new WebP
+files should be extracted into the project root:
+
+```bash
+unzip -o ~/Downloads/dragon_realms_v021_artwork.zip -d .
+```
+
+The same art registry and SVG fallbacks support all 15 illustrated
+dragons. The gameplay engine, scoring, save files, and 48-card Codex
+are unchanged. The image binaries are in the ZIP, not in GitHub's
+text-file commits. Images are an initial generated-art pass, not final
+commissioned illustrations.
+
+---
+
 # Dragon Realms portrait assets (v0.20)
 
 The v0.20 artwork ZIP contains **seven distinct dragon illustrations**
