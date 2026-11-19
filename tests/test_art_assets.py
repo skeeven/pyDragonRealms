@@ -10,13 +10,18 @@ from dragon_realms.art_assets import dragon_art_html, dragon_art_path
 from dragon_realms.artwork import dragon_svg
 
 
-def test_registry_contains_three_showcase_dragons():
-    """The initial illustrations use existing, stable card IDs."""
+def test_registry_contains_seven_illustrated_dragons():
+    """The artwork registry uses stable IDs for the seven portraits."""
     assert art_assets.DRAGON_ART == {
+        "starter_flame": "flame/starter_flame.webp",
+        "starter_tide": "tide/starter_tide.webp",
+        "dragon_flame_8": "flame/infernos.webp",
+        "dragon_grove_1": "grove/mossback.webp",
         "dragon_stone_1": "stone/granitehide.webp",
         "dragon_storm_8": "storm/stormspire.webp",
-        "dragon_grove_1": "grove/mossback.webp",
+        "dragon_shadow_1": "shadow/duskveil.webp",
     }
+    assert len(art_assets.DRAGON_THUMBNAILS) == 7
 
 
 def test_missing_art_uses_original_svg():
@@ -126,3 +131,50 @@ def test_codex_uses_full_portrait_instead_of_card_crop():
     ) or "dragon_art_html(selected, family, 240, portrait=True)" in (
         source
     )
+
+
+@pytest.mark.parametrize(
+    ("card_id", "element"),
+    [("starter_flame", "Flame"), ("starter_tide", "Tide")],
+)
+def test_starters_use_artwork_when_available(
+    tmp_path, monkeypatch, card_id, element
+):
+    """Starter portraits render without entering the collectible Codex."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    relative = art_assets.DRAGON_ART[card_id]
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"STARTER-ART")
+    html = dragon_art_html(card_id, element, 112)
+    encoded = base64.b64encode(b"STARTER-ART").decode("ascii")
+    assert encoded in html
+    assert "<img " in html
+
+
+def test_missing_starter_image_falls_back_to_svg(tmp_path, monkeypatch):
+    """The game still starts correctly without an artwork ZIP."""
+    monkeypatch.setattr(art_assets, "ASSET_ROOT", tmp_path)
+    assert dragon_art_html("starter_flame", "Flame", 112) == (
+        dragon_svg("Flame", 112, 0)
+    )
+
+
+def test_every_registered_artwork_has_a_thumbnail_path():
+    """Full portraits and thumbnails use consistent relative paths."""
+    for card_id, portrait in art_assets.DRAGON_ART.items():
+        assert portrait.endswith(".webp")
+        assert art_assets.DRAGON_THUMBNAILS[card_id] == (
+            portrait.replace(".webp", "-thumb.webp")
+        )
+
+
+def test_existing_dragon_abilities_unchanged():
+    """Adding portraits cannot modify dragon mechanics or statistics."""
+    from dragon_realms.engine import make_catalog
+
+    catalog = make_catalog()
+    assert catalog["starter_flame"].power == 1
+    assert catalog["starter_tide"].power == 1
+    assert catalog["dragon_storm_8"].power == 3
+    assert catalog["dragon_stone_1"].effect == "stone_guard"
