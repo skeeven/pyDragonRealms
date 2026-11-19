@@ -129,6 +129,7 @@ class Game:
         self.quests: list[Instance] = []
         self.bids: dict[str, dict[str, int]] = {}
         self.trades: dict[str, Trade] = {}
+        self.pending_meditations: dict[str, list[Instance]] = {}
         self.events: list[dict[str, Any]] = []
         self.version = 0
         for player in self.players.values():
@@ -387,12 +388,59 @@ class Game:
             card_id=incoming.card_id, round=self.round,
         )
 
+    def offer_meditation(self, pid: str) -> list[Instance]:
+        """Pay and reveal two choices; action completes on selection."""
+        self._require(Phase.ACTIONS)
+        player = self._player(pid)
+        if pid in self.pending_meditations:
+            raise RuleError("Meditation already awaiting a choice")
+        if player.actions_left < 1:
+            raise RuleError("No actions remaining")
+        if len(player.reserve) >= 7 or len(self.decks["dragon"]) < 2:
+            raise RuleError("Cannot meditate")
+        self._charge(player, {"crystal": 2})
+        options = [self._draw("dragon"), self._draw("dragon")]
+        self.pending_meditations[pid] = options
+        self._record("meditation_offered", player=pid, round=self.round)
+        return list(options)
+
+    def resolve_meditation(self, pid: str, keep: int) -> Instance:
+        """Keep one revealed card, discard the other, and spend an action."""
+        self._require(Phase.ACTIONS)
+        player = self._player(pid)
+        options = self.pending_meditations.get(pid)
+        if options is None:
+            raise RuleError("No meditation awaiting a choice")
+        if type(keep) is not int or keep not in (0, 1):
+            raise RuleError("Keep must be 0 or 1")
+        if len(player.reserve) >= 7:
+            raise RuleError("Reserve full")
+        selected = options[keep]
+        player.reserve.append(selected)
+        del self.pending_meditations[pid]
+        player.actions_left -= 1
+        self._record(
+            "action", player=pid, action="meditate",
+            round=self.round, card_name=self.cards[selected.card_id].name,
+            acquired_dragon_id=selected.card_id, prestige=0,
+        )
+        return selected
+
     def act(self, pid: str, action: str, **kwargs: Any) -> None:
         """Execute one Warden action; adapter determines seat/action ordering."""
         self._require(Phase.ACTIONS)
         player = self._player(pid)
         if player.actions_left <= 0:
             raise RuleError("No actions remaining")
+        if pid in self.pending_meditations:
+            raise RuleError("Finish meditation before taking another action")
+        if action == "meditate":
+            keep = kwargs.get("keep", 0)
+            if type(keep) is not int or keep not in (0, 1):
+                raise RuleError("Keep must be 0 or 1")
+            self.offer_meditation(pid)
+            self.resolve_meditation(pid, keep)
+            return
         action_card = ""
         acquired_dragon_id = ""
         prestige_earned = 0
@@ -429,16 +477,6 @@ class Game:
             recruited = self._draw("dragon")
             player.reserve.append(recruited)
             acquired_dragon_id = recruited.card_id
-        elif action == "meditate":
-            if len(player.reserve) >= 7 or len(self.decks["dragon"]) < 2:
-                raise RuleError("Cannot meditate")
-            keep = kwargs.get("keep", 0)
-            if keep not in (0, 1):
-                raise RuleError("Keep must be 0 or 1")
-            self._charge(player, {"crystal": 2})
-            drawn = [self._draw("dragon"), self._draw("dragon")]
-            player.reserve.append(drawn[keep])
-            acquired_dragon_id = drawn[keep].card_id
         elif action == "build":
             if len(player.buildings) >= 3:
                 raise RuleError("Building capacity reached")
@@ -508,6 +546,8 @@ class Game:
 
     def end_round(self) -> None:
         self._require(Phase.ACTIONS)
+        if self.pending_meditations:
+            raise RuleError("Resolve pending meditation before ending round")
         self.phase = Phase.END
         self._refill(self.quests, "quest", 3)
         self._refill(self.market, "dragon", 3)
