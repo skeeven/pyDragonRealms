@@ -111,8 +111,14 @@ def _best_bond(game: Game, pid: str):
 def value(game: Game, item) -> float:
     card = game.cards[item.card_id]
     ability_bonus = int(card.effect == "stone_guard")
-    quest_bonus = int(card.effect in ("storm_boost", "shadow_bonus"))
-    return card.prestige + 0.45 * card.power + ability_bonus + 0.5 * quest_bonus
+    quest_bonus = {
+        "storm_boost": 0.5,
+        "shadow_bonus": 0.5,
+        "flame_focus": 1.1,
+        "tide_bounty": 0.45,
+        "grove_bounty": 0.45,
+    }.get(card.effect, 0.0)
+    return card.prestige + 0.45 * card.power + ability_bonus + quest_bonus
 
 
 def _team_value(game: Game, pid: str) -> float:
@@ -171,7 +177,8 @@ def quest_options(game: Game, pid: str):
                 elements = {game.cards[d.card_id].element for d in dragons}
                 power = sum(
                     game.cards[d.card_id].power + d.bond
-                    + int(game.cards[d.card_id].effect == "storm_boost")
+                    + (2 if game.cards[d.card_id].effect == "flame_focus"
+                       else int(game.cards[d.card_id].effect == "storm_boost"))
                     for d in dragons
                 ) + power_bonus
                 power += int(prism and len(elements) >= 3)
