@@ -35,6 +35,9 @@ def test_other_bots_can_meditate_when_team_needs_dragon(strategy):
     clear_choices(game)
     player = game.players["Bot-A"]
     player.resources["crystal"] = 9
+    if strategy == "builder":
+        # Builder preserves its existing priority for affordable bonds.
+        player.resources["ember"] = 0
     original = len(game.decks["dragon"])
     assert choose_action(game, "Bot-A", strategy) == "meditate"
     assert len(player.reserve) == 1
