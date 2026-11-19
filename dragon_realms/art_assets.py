@@ -22,12 +22,20 @@ DRAGON_ART = {
     "dragon_grove_1": "grove/mossback.webp",
 }
 
+DRAGON_THUMBNAILS = {
+    card_id: path.replace(".webp", "-thumb.webp")
+    for card_id, path in DRAGON_ART.items()
+}
+
 MAX_ART_BYTES = 2_000_000
 
 
-def dragon_art_path(card_id: str) -> Path | None:
+def dragon_art_path(card_id: str, portrait: bool = False) -> Path | None:
     """Return a validated local asset for a known collectible."""
-    relative = DRAGON_ART.get(card_id)
+    relative = (
+        DRAGON_ART.get(card_id) if portrait
+        else DRAGON_THUMBNAILS.get(card_id)
+    )
     if relative is None:
         return None
     path = ASSET_ROOT / relative
@@ -58,15 +66,24 @@ def dragon_art_html(
         raise ValueError("Image size must be between 24 and 512")
     if variant is None:
         variant = dragon_variant(card_id)
-    path = dragon_art_path(card_id)
+    path = dragon_art_path(card_id, portrait=portrait)
+    if path is None and not portrait:
+        path = dragon_art_path(card_id, portrait=True)
     if path is None:
         return dragon_svg(element, size, variant)
     src = _cached_image(str(path), path.stat().st_mtime_ns)
     title = escape(f"{element} dragon illustration", quote=True)
     height = size * 3 // 2 if portrait else size
     ratio = "2/3" if portrait else "1/1"
+    if portrait:
+        return (
+            f'<img src="{src}" alt="{title}" loading="lazy" '
+            f'width="{size}" '
+            'style="display:block;width:100%;height:auto;'
+            'object-fit:contain;" />'
+        )
     return (
         f'<img src="{src}" alt="{title}" loading="lazy" '
-        f'width="{size}" height="{height}" '
-        f'style="display:block;object-fit:cover;aspect-ratio:{ratio};" />'
+        f'width="{size}" height="{size}" '
+        'style="display:block;object-fit:cover;aspect-ratio:1/1;" />'
     )
