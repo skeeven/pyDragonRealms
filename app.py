@@ -34,6 +34,7 @@ from dragon_realms.history import leaderboard, match_history
 from dragon_realms.presentation import action_feedback
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
+from dragon_realms.trade_ai import bot_accepts_trade
 
 HUMAN = "You"
 BOTS = {
@@ -547,9 +548,6 @@ def market_screen(game: Game) -> None:
             }
             for event in results
         ]
-        game.begin_actions()
-        for bot in BOTS:
-            deploy_best(game, bot)
         won = [
             result["card"] for result in st.session_state.auction
             if result["winner"] == HUMAN
@@ -560,12 +558,77 @@ def market_screen(game: Game) -> None:
                 "Won: " + ", ".join(won)
                 if won else "No cards won this round"
             )
-            + ". Deploy a dragon if one is in reserve."
+            + ". You may offer a trade before deployment."
         )
         st.session_state.notice_kind = "success" if won else "info"
         st.rerun()
     except RuleError as exc:
         st.error(str(exc))
+
+
+def trade_screen(game: Game) -> None:
+    """Offer an optional resource trade to a computer Warden."""
+    st.markdown("**🤝 Trade council · Optional negotiations**")
+    st.caption(
+        "Offer 1 or 2 of one resource for the same amount of another. "
+        "Bots accept only trades that improve their resource mix. "
+        "Their resource totals remain private."
+    )
+    with st.form(f"trade_{game.round}"):
+        bot = st.selectbox("Trade with", list(BOTS))
+        offered = st.selectbox(
+            "You offer", ["crystal", "ember", "aether"]
+        )
+        requested = st.selectbox(
+            "You request", [
+                key for key in ("crystal", "ember", "aether")
+                if key != offered
+            ]
+        )
+        amount = st.selectbox("Quantity of each", [1, 2])
+        submitted = st.form_submit_button("Propose trade")
+    if submitted:
+        try:
+            trade_id = game.propose_trade(
+                HUMAN, bot,
+                {"resources": {offered: amount}},
+                {"resources": {requested: amount}},
+            )
+            trade = game.trades[trade_id]
+            if bot_accepts_trade(game, bot, trade):
+                game.accept_trade(bot, trade_id)
+                st.session_state.notice = (
+                    f"🤝 {bot} accepted: traded {amount} "
+                    f"{offered.title()} for {amount} "
+                    f"{requested.title()}."
+                )
+                st.session_state.notice_kind = "success"
+            else:
+                game.reject_trade(bot, trade_id)
+                st.session_state.notice = (
+                    f"{bot} declined the offer. "
+                    "Try another trade or continue."
+                )
+                st.session_state.notice_kind = "info"
+            st.rerun()
+        except RuleError as exc:
+            st.error(str(exc))
+    if st.button(
+        "Continue to deployment", type="primary",
+        use_container_width=True,
+    ):
+        try:
+            game.begin_actions()
+            for bot in BOTS:
+                deploy_best(game, bot)
+        except RuleError as exc:
+            st.error(str(exc))
+        else:
+            st.session_state.notice = (
+                "Trade council closed. Deploy your dragons."
+            )
+            st.session_state.notice_kind = "info"
+            st.rerun()
 
 
 def deploy_screen(game: Game) -> None:
@@ -1149,21 +1212,24 @@ def main() -> None:
 
     with decisions:
         if game.phase == Phase.MARKET:
-            st.markdown("#### Step 1 of 3 · Acquire")
+            st.markdown("#### Step 1 of 4 · Acquire")
             market_screen(game)
+        elif game.phase == Phase.TRADE:
+            st.markdown("#### Step 2 of 4 · Negotiate")
+            trade_screen(game)
         elif game.phase == Phase.ACTIONS:
             deployment_available = (
                 not player.swapped and bool(player.reserve)
                 and HUMAN not in game.pending_meditations
             )
             if deployment_available:
-                st.markdown("#### Step 2 of 3 · Deploy")
+                st.markdown("#### Step 3 of 4 · Deploy")
                 deploy_screen(game)
                 st.divider()
             elif player.swapped:
                 st.caption("✓ Free deployment used this round")
             if player.actions_left:
-                st.markdown("#### Step 3 of 3 · Take actions")
+                st.markdown("#### Step 4 of 4 · Take actions")
                 action_screen(game)
             else:
                 st.success("Your actions are complete.")
