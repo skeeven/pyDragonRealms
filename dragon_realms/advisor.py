@@ -34,6 +34,26 @@ def team_power(game: Game, dragons) -> int:
     )
 
 
+def effective_quest_power(game: Game, pid: str, team) -> int:
+    """Calculate printed and passive power for a proposed quest team."""
+    player = game.players[pid]
+    power = team_power(game, team)
+    if any(
+        game.cards[item.card_id].effect == "quest_power"
+        for item in player.buildings
+    ):
+        power += 1
+    if (
+        len({game.cards[item.card_id].element for item in team}) >= 3
+        and any(
+            game.cards[item.card_id].effect == "prism"
+            for item in player.relics
+        )
+    ):
+        power += 1
+    return power
+
+
 def quest_previews(game: Game, pid: str) -> list[dict[str, Any]]:
     """Describe every public quest without mutating the match.
 
@@ -128,6 +148,19 @@ def quest_previews(game: Game, pid: str) -> list[dict[str, Any]]:
             "requirement": dict(requirement),
             "reward": reward,
             "prestige": prestige,
+            "team_power": (
+                effective_quest_power(game, pid, chosen)
+                if chosen else 0
+            ),
+            "power_surplus": (
+                effective_quest_power(game, pid, chosen)
+                - requirement.get("power", 0)
+                if chosen else None
+            ),
+            "ready_after": (
+                sum(dragon not in chosen for dragon in ready)
+                if chosen else len(ready)
+            ),
             "ready": chosen is not None,
             "dragon_uids": (
                 [dragon.uid for dragon in chosen] if chosen else []
