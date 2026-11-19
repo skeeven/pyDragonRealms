@@ -56,6 +56,14 @@ DRAGON_ART = {
     "dragon_storm_5": "storm/skyshiver.webp",
     "dragon_stone_5": "stone/cragheart.webp",
     "dragon_shadow_5": "shadow/echofang.webp",
+    "dragon_tide_8": "tide/abyssal.webp",
+    "dragon_grove_7": "grove/verdant.webp",
+    "dragon_grove_8": "grove/wildbloom.webp",
+    "dragon_storm_6": "storm/voltwing.webp",
+    "dragon_storm_7": "storm/tempestral.webp",
+    "dragon_stone_6": "stone/ironridge.webp",
+    "dragon_shadow_6": "shadow/moonshade.webp",
+    "dragon_shadow_7": "shadow/voidscale.webp",
 }
 
 DRAGON_THUMBNAILS = {
