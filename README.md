@@ -48,6 +48,44 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Named dragon abilities and balance baseline (v0.28)
+
+Three collectible dragons now have distinct quest abilities in place
+of their original generic element production effect:
+
+- **Kindlefang (Flame)**: +2 quest power when assigned, instead of
+  producing 1 Ember each round.
+- **Foamwing (Tide)**: +1 Crystal after successfully completing a
+  quest that uses Foamwing, instead of producing 1 Crystal per round.
+- **Wildbloom (Grove)**: +1 Aether after successfully completing a
+  quest that uses Wildbloom, instead of producing 1 Aether per round.
+
+Resources still respect the normal 20-resource cap. A dragon must
+participate in a completed quest for its quest bounty to activate.
+The remaining 45 collectible dragons keep their existing effects.
+This is a small, intentionally focused first balance experiment.
+
+The engine, computer opponents, market bids, Warden advisor, and card
+descriptions all recognize the new abilities. Quest previews show
+signature resource gains when the recommended team includes the
+appropriate dragon. The save format and card IDs remain unchanged.
+An existing save that contains one of these three dragons will use
+the **new effect** after upgrading, because card definitions are
+loaded from the current catalog.
+
+Compare this version's simulator results against your prior baseline
+(500 games, seed 0, 8 rounds): Balanced 31.1%, Collector 20.0%,
+Bonding 28.1%, Builder 20.8%. That is a reference run from v0.12,
+not a guaranteed expected result for v0.28. Run:
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m dragon_realms.simulate --players 4 --games 500 --rounds 8
+python3 -m streamlit run app.py
+```
+
 ## Fantasy card polish and action feedback (v0.27)
 
 The visual board now uses more distinctive elemental frames on active
