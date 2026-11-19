@@ -48,6 +48,29 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Dragon artwork expansion — Batch 3 (v0.22)
+
+Eight new collectible dragon portraits have been added to the optional
+artwork registry: **Ashmaw, Emberclaw, Coralcrest, Pearlscale,
+Briarwing, Cloudbreaker, Boulderspine, and Umbraclaw**. Total coverage
+is now **23 of 50 dragons**, including the two starters.
+
+Download the separate `dragon_realms_v022_artwork.zip` and extract it
+over your existing artwork from v0.20 and v0.21. This is an incremental
+ZIP containing 16 WebP files, not an all-in-one replacement:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v022_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Artwork file names are keyed by the original, unchanged dragon card IDs.
+The SVG fallback still handles the other cards. Gameplay, balancing,
+auction rules, Codex counts, and saved games are unchanged.
+
 ## Dragon artwork expansion — Batch 2 (v0.21)
 
 Eight new dragons have full illustrations and compact thumbnails:
