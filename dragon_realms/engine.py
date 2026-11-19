@@ -35,6 +35,9 @@ DRAGON_ABILITIES = {
     "storm_boost": "Storm: +1 quest power when assigned.",
     "stone_guard": "Stone: +1 permanent prestige while deployed.",
     "shadow_bonus": "Shadow: +1 prestige when used on a quest.",
+    "flame_focus": "Kindlefang: +2 quest power when assigned.",
+    "tide_bounty": "Foamwing: gain 1 Crystal after a completed quest.",
+    "grove_bounty": "Wildbloom: gain 1 Aether after a completed quest.",
 }
 
 
@@ -455,7 +458,8 @@ class Game:
             quest = self.cards[item.card_id]
             power = sum(
                 self.cards[d.card_id].power + d.bond
-                + int(self.cards[d.card_id].effect == "storm_boost")
+                + (2 if self.cards[d.card_id].effect == "flame_focus"
+                   else int(self.cards[d.card_id].effect == "storm_boost"))
                 for d in dragons
             )
             if any(self.cards[b.card_id].effect == "quest_power"
@@ -481,8 +485,16 @@ class Game:
             )
             player.quest_prestige += prestige_earned
             player.quests_completed += 1
-            self._grant(player, {k: v for k, v in quest.reward.items()
-                                 if k in RESOURCES})
+            gains = {k: v for k, v in quest.reward.items()
+                     if k in RESOURCES}
+            for dragon in dragons:
+                resource = {
+                    "tide_bounty": "crystal",
+                    "grove_bounty": "aether",
+                }.get(self.cards[dragon.card_id].effect)
+                if resource:
+                    gains[resource] = gains.get(resource, 0) + 1
+            self._grant(player, gains)
             self.quests.remove(item)
         else:
             raise RuleError("Unknown action")
@@ -605,6 +617,12 @@ def make_catalog() -> dict[str, Card]:
                       "storm_boost" if element == "Storm" else
                       "stone_guard" if element == "Stone" else
                       "shadow_bonus")
+            signature = {
+                "dragon_flame_7": "flame_focus",
+                "dragon_tide_7": "tide_bounty",
+                "dragon_grove_8": "grove_bounty",
+            }
+            effect = signature.get(key, effect)
             cards[key] = Card(key, "dragon",
                               dragon_name(element, index + 1),
                               element, power, 1 + index % 4,
