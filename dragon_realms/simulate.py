@@ -49,6 +49,9 @@ def _market_value(game: Game, pid: str, item,
         "storm_boost": 1.0,
         "stone_guard": 1.5,
         "shadow_bonus": 1.0,
+        "flame_focus": 1.4,
+        "tide_bounty": 0.8,
+        "grove_bounty": 0.8,
     }.get(card.effect, 0.0)
     if card.effect.startswith("produce:"):
         turns_left = game.max_rounds - game.round
