@@ -1,3 +1,39 @@
+# Dragon artwork — Batch 5 (v0.24)
+
+Eight additional collectible portraits and matching card thumbnails
+are available in `dragon_realms_v024_artwork.zip`:
+
+| Dragon | Card ID | Portrait path |
+| --- | --- | --- |
+| Blazehorn | `dragon_flame_6` | `flame/blazehorn.webp` |
+| Kindlefang | `dragon_flame_7` | `flame/kindlefang.webp` |
+| Wavecaller | `dragon_tide_5` | `tide/wavecaller.webp` |
+| Foamwing | `dragon_tide_7` | `tide/foamwing.webp` |
+| Bloomtail | `dragon_grove_6` | `grove/bloomtail.webp` |
+| Skyshiver | `dragon_storm_5` | `storm/skyshiver.webp` |
+| Cragheart | `dragon_stone_5` | `stone/cragheart.webp` |
+| Echofang | `dragon_shadow_5` | `shadow/echofang.webp` |
+
+Paths are relative to `assets/dragons/`. Each portrait has a
+corresponding `-thumb.webp` with the same basename. This is an
+**incremental art pack**, so retain your v0.20–v0.23 artwork:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v024_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+Total coverage is now 39 of 50 dragons: 37 collectible cards plus
+the 2 starters. The other 11 collectible dragons still use SVG
+fallbacks. Artwork does not change gameplay, save data, or card rules.
+Only code and documentation are committed to GitHub; the actual
+images are delivered in the separate ZIP.
+
+---
+
 # Dragon artwork — Batch 4 (v0.23)
 
 Eight additional collectible portraits and matching face-focused
