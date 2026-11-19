@@ -1,3 +1,41 @@
+# Dragon Realms portrait assets (v0.20)
+
+The v0.20 artwork ZIP contains **seven distinct dragon illustrations**
+and their matching thumbnail crops. It supersedes both previous packs,
+so you only need to extract the latest ZIP.
+
+| Dragon | Card ID | Files |
+| --- | --- | --- |
+| Starter Flame | `starter_flame` | `flame/starter_flame[-thumb].webp` |
+| Starter Tide | `starter_tide` | `tide/starter_tide[-thumb].webp` |
+| Infernos | `dragon_flame_8` | `flame/infernos[-thumb].webp` |
+| Duskveil | `dragon_shadow_1` | `shadow/duskveil[-thumb].webp` |
+| Mossback | `dragon_grove_1` | `grove/mossback[-thumb].webp` |
+| Granitehide | `dragon_stone_1` | `stone/granitehide[-thumb].webp` |
+| Stormspire | `dragon_storm_8` | `storm/stormspire[-thumb].webp` |
+
+All paths are relative to `assets/dragons/`. The portrait uses
+`name.webp` and the square card thumbnail uses `name-thumb.webp`.
+The image renderer automatically selects the image when available and
+falls back to the original SVG when it is not.
+
+The 48 collectible dragons remain distinct from the two starter dragons.
+Starter portraits are always visible on a normal game board, but the
+Codex continues tracking only 48 collectible entries.
+
+To install from the ZIP attached to the v0.20 ChatGPT handoff:
+
+```bash
+unzip -o ~/Downloads/dragon_realms_v020_artwork.zip -d .
+```
+
+No gameplay or save-file changes are required. The code was committed
+to GitHub, but the actual binary WebP images are distributed in the ZIP.
+You can commit `assets/dragons/*.webp` and nested folders to your
+repository after extraction if you want the art to travel with the code.
+
+---
+
 # Dragon Realms artwork assets (v0.19.1)
 
 WebP illustrations are optional. Each featured dragon has separate files
