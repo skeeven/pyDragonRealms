@@ -87,6 +87,31 @@ and will eventually receive its own independently designed art. These
 images are initial visual prototypes rather than the complete set of
 48 finished illustrations.
 
+## Artwork thumbnails and unique Mossback (v0.19.1)
+
+Dragon artwork now supports two optional files for each illustrated
+dragon: a face-focused square `-thumb.webp` for compact cards and an
+uncropped `.webp` portrait for the larger Codex detail screen.
+Missing thumbnails still use the original portrait, so the v0.19
+artwork pack remains compatible. Missing portraits still use SVG.
+
+The replacement Mossback illustration has green leaf scales, antler
+branches, and an enchanted forest, rather than a green recolor of
+Granitehide. Download `dragon_realms_v0191_artwork.zip` from the
+ChatGPT handoff, then extract it at the repository root:
+
+```bash
+unzip -o ~/Downloads/dragon_realms_v0191_artwork.zip -d .
+git pull origin main
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+These image binaries are delivered in the ZIP rather than stored in the
+code-only GitHub update. Once installed locally, commit the
+`assets/dragons/**/*.webp` files if you want them available on other
+devices. No scoring or save-format changes were made.
+
 ## Dragon Codex Gallery (v0.18)
 
 The Codex now shows **eight compact gallery tiles** per element in a
