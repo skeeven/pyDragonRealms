@@ -370,6 +370,8 @@ class Game:
         player = self._player(pid)
         if player.swapped:
             raise RuleError("Already changed deployment this round")
+        if pid in self.pending_meditations:
+            raise RuleError("Finish meditation before deploying")
         incoming = self._find(player.reserve, reserve_uid)
         outgoing = self._find(player.deployed, deployed_uid) if deployed_uid else None
         if outgoing and outgoing.exhausted:
