@@ -1,3 +1,39 @@
+# Dragon artwork — Batch 4 (v0.23)
+
+Eight additional collectible portraits and matching face-focused
+thumbnails are available in `dragon_realms_v023_artwork.zip`:
+
+| Dragon | Card ID | Portrait path |
+| --- | --- | --- |
+| Pyrelash | `dragon_flame_3` | `flame/pyrelash.webp` |
+| Scorchscale | `dragon_flame_5` | `flame/scorchscale.webp` |
+| Deepglide | `dragon_tide_4` | `tide/deepglide.webp` |
+| Oakheart | `dragon_grove_5` | `grove/oakheart.webp` |
+| Thundermaw | `dragon_storm_3` | `storm/thundermaw.webp` |
+| Galestrike | `dragon_storm_4` | `storm/galestrike.webp` |
+| Slatehorn | `dragon_stone_4` | `stone/slatehorn.webp` |
+| Gloomwing | `dragon_shadow_4` | `shadow/gloomwing.webp` |
+
+Paths are relative to `assets/dragons/`. A `-thumb.webp` with the
+same basename accompanies each portrait, for 16 WebP files in total.
+This is an **incremental pack**. Retain v0.20, v0.21, and v0.22
+artwork when extracting it:
+
+```bash
+git pull origin main
+unzip -o ~/Downloads/dragon_realms_v023_artwork.zip -d .
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m streamlit run app.py
+```
+
+The registry now contains 31 illustrated dragon IDs out of 50:
+29 of the 48 collectibles plus both starter dragons (62%).
+Missing assets fall back to SVG. Rules, stats, and save formats are
+unchanged. The images are delivered in the ZIP, not the code commits.
+
+---
+
 # Artwork expansion — Batch 3 (v0.22)
 
 Eight additional dragon portraits and face-focused thumbnails are
