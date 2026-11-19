@@ -108,6 +108,10 @@ def export_game(game: Game) -> str:
         "blueprints": [asdict(item) for item in game.blueprints],
         "quests": [asdict(item) for item in game.quests],
         "bids": game.bids,
+        "pending_meditations": {
+            pid: [asdict(item) for item in options]
+            for pid, options in game.pending_meditations.items()
+        },
         "trades": {
             key: asdict(trade) for key, trade in game.trades.items()
         },
@@ -242,6 +246,21 @@ def import_game(raw: str | bytes) -> Game:
         if len(set(cards)) != len(cards):
             raise ValueError("Duplicate card definition in deck")
         game.decks[kind] = list(cards)
+
+    pending = data.get("pending_meditations", {})
+    if not isinstance(pending, dict) or set(pending) - set(order):
+        raise ValueError("Invalid pending meditation")
+    if pending and phase != Phase.ACTIONS:
+        raise ValueError("Meditation is only available during actions")
+    game.pending_meditations = {}
+    for pid, options in pending.items():
+        if game.players[pid].actions_left < 1:
+            raise ValueError("Meditation requires an available action")
+        if len(game.players[pid].reserve) >= 7:
+            raise ValueError("Meditation reserve is full")
+        game.pending_meditations[pid] = zone(options, "dragon", 2)
+        if len(game.pending_meditations[pid]) != 2:
+            raise ValueError("Meditation requires exactly two cards")
 
     bids = data.get("bids", {})
     if not isinstance(bids, dict) or set(bids) - set(order):
