@@ -22,7 +22,7 @@ Play an eight-round match by default against three computer Wardens
 using a visual scoreboard, sealed auctions, deployment, quest and building
 actions, and contextual suggestions. The game runs in Streamlit session
 state; export a JSON save before closing the browser if you want to resume.
-Detailed hand-painted card art and proper reveal-and-choose meditation are future work.
+All 50 dragon illustrations are mapped; reveal-and-choose meditation and an optional trade council are available in v0.31–v0.33. Networked multiplayer remains future work.
 
 ## Adaptive opponents and action diagnostics (v0.12)
 
