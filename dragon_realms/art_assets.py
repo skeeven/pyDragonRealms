@@ -17,9 +17,13 @@ from .dragon_identity import dragon_variant
 ASSET_ROOT = Path(__file__).resolve().parents[1] / "assets" / "dragons"
 
 DRAGON_ART = {
+    "starter_flame": "flame/starter_flame.webp",
+    "starter_tide": "tide/starter_tide.webp",
+    "dragon_flame_8": "flame/infernos.webp",
+    "dragon_grove_1": "grove/mossback.webp",
     "dragon_stone_1": "stone/granitehide.webp",
     "dragon_storm_8": "storm/stormspire.webp",
-    "dragon_grove_1": "grove/mossback.webp",
+    "dragon_shadow_1": "shadow/duskveil.webp",
 }
 
 DRAGON_THUMBNAILS = {
