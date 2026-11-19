@@ -76,7 +76,7 @@ def test_builder_selects_highest_valued_affordable_building():
 
 
 def test_collector_avoids_recruiting_into_full_team():
-    """Recruit is not an efficient fallback for an already full team."""
+    """A full team converts spare Ember into bonds, not extra dragons."""
     game = ready_game()
     player = game.players["A"]
     player.deployed.extend([
@@ -86,7 +86,32 @@ def test_collector_avoids_recruiting_into_full_team():
     player.reserve.clear()
     game.quests.clear()
     game.blueprints.clear()
-    before = len(player.reserve)
+    reserve_before = len(player.reserve)
+    bonds_before = sum(dragon.bond for dragon in player.deployed)
+    ember_before = player.resources["ember"]
+
     result = choose_action(game, "A", "collector")
-    assert result == "channel"
-    assert len(player.reserve) == before
+
+    assert result == "bond"
+    assert len(player.reserve) == reserve_before
+    assert sum(dragon.bond for dragon in player.deployed) == (
+        bonds_before + 1
+    )
+    assert player.resources["ember"] == ember_before - 2
+
+
+def test_collector_channels_if_full_team_cannot_bond():
+    """Resource gathering remains legal when no scoring option exists."""
+    game = ready_game()
+    player = game.players["A"]
+    player.deployed.extend([
+        game._instance(f"dragon_stone_{i}")
+        for i in range(1, 4)
+    ])
+    game.quests.clear()
+    game.blueprints.clear()
+    player.resources["ember"] = 0
+    reserve_before = len(player.reserve)
+
+    assert choose_action(game, "A", "collector") == "channel"
+    assert len(player.reserve) == reserve_before
