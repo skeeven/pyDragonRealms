@@ -112,3 +112,17 @@ def test_old_artwork_pack_without_thumbnail_still_works(
     (folder / "mossback.webp").write_bytes(b"OLD-PORTRAIT")
     result = dragon_art_html("dragon_grove_1", "Grove", 90)
     assert base64.b64encode(b"OLD-PORTRAIT").decode("ascii") in result
+
+
+def test_codex_uses_full_portrait_instead_of_card_crop():
+    """The selected dragon detail view requests a full illustration."""
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app.py"
+    ).read_text(encoding="utf-8")
+    assert "dragon_art_html(selected, family, 180, portrait=True)" in (
+        source
+    ) or "dragon_art_html(selected, family, 240, portrait=True)" in (
+        source
+    )
