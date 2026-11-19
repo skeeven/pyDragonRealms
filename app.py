@@ -635,9 +635,56 @@ def deploy_screen(game: Game) -> None:
         st.rerun()
 
 
+def meditation_choice(game: Game) -> None:
+    """Show the two revealed dragon cards until one is selected."""
+    options = game.pending_meditations[HUMAN]
+    st.markdown("### ✨ Meditation · Choose one dragon")
+    st.caption(
+        "Both dragons are revealed. Keep one for your reserve; "
+        "the other is discarded. Your 2 Crystal is already spent."
+    )
+    columns = st.columns(2, gap="small")
+    for index, (column, item) in enumerate(zip(columns, options)):
+        with column:
+            card = game.cards[item.card_id]
+            st.markdown(
+                dragon_art_html(
+                    card.id, card.element, 180, portrait=True
+                ),
+                unsafe_allow_html=True,
+            )
+            st.markdown(f"**{escape(card.name)}**")
+            st.caption(
+                f"{ELEMENT_EMOJI[card.element]} {card.element} · "
+                f"⚔ {card.power} · 🏆 {card.prestige}"
+            )
+            st.caption(
+                DRAGON_ABILITIES.get(card.effect, "No ability")
+            )
+            if st.button(
+                f"Keep {card.name}",
+                key=f"meditate_keep_{game.round}_{index}",
+                use_container_width=True,
+                type="primary",
+            ):
+                try:
+                    game.resolve_meditation(HUMAN, index)
+                except RuleError as exc:
+                    st.error(str(exc))
+                else:
+                    st.session_state.notice = (
+                        f"✨ Meditation complete · Kept {card.name}."
+                    )
+                    st.session_state.notice_kind = "success"
+                    st.rerun()
+
+
 def action_screen(game: Game) -> None:
     """Offer guided, validated actions with meaningful outcomes."""
     player = game.players[HUMAN]
+    if HUMAN in game.pending_meditations:
+        meditation_choice(game)
+        return
     st.markdown(f"**⚔️ {player.actions_left} actions remaining**")
     buildings = [
         item for item in game.blueprints
@@ -797,20 +844,20 @@ def action_screen(game: Game) -> None:
             perform(game, "recruit")
     with tabs[5]:
         st.write(
-            "Spend 2 Crystal to draw two dragons and keep one. "
-            "The current engine chooses the kept card by index "
-            "without revealing the choices first."
+            "Spend 2 Crystal to reveal two dragons and choose one. "
+            "The other dragon is discarded."
         )
         available = (
             player.resources["crystal"] >= 2
             and len(player.reserve) < 7
             and len(game.decks["dragon"]) >= 2
         )
-        if st.button(
-            "Meditate (keep first draw)",
-            disabled=not available,
-        ):
-            perform(game, "meditate", keep=0)
+        if st.button("Reveal two dragons", disabled=not available):
+            try:
+                game.offer_meditation(HUMAN)
+                st.rerun()
+            except RuleError as exc:
+                st.error(str(exc))
 
 
 def perform(game: Game, action: str, **kwargs) -> None:
@@ -1107,6 +1154,7 @@ def main() -> None:
         elif game.phase == Phase.ACTIONS:
             deployment_available = (
                 not player.swapped and bool(player.reserve)
+                and HUMAN not in game.pending_meditations
             )
             if deployment_available:
                 st.markdown("#### Step 2 of 3 · Deploy")
