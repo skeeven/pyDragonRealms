@@ -24,6 +24,14 @@ DRAGON_ART = {
     "dragon_stone_1": "stone/granitehide.webp",
     "dragon_storm_8": "storm/stormspire.webp",
     "dragon_shadow_1": "shadow/duskveil.webp",
+    "dragon_flame_1": "flame/cinderwing.webp",
+    "dragon_tide_1": "tide/riptalon.webp",
+    "dragon_tide_2": "tide/mistfin.webp",
+    "dragon_grove_2": "grove/thornroot.webp",
+    "dragon_grove_3": "grove/fernwhisper.webp",
+    "dragon_storm_1": "storm/sparkcrest.webp",
+    "dragon_stone_2": "stone/flintjaw.webp",
+    "dragon_shadow_2": "shadow/nightwhisper.webp",
 }
 
 DRAGON_THUMBNAILS = {
