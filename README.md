@@ -48,6 +48,48 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## Smarter Collector and AI Meditation (v0.29)
+
+The Collector bot now spends fewer actions accumulating resources that
+do not score. When a deployable dragon is needed and enough rounds
+remain, it chooses between:
+
+- **Recruit** when it can safely afford any possible card and has
+  plenty of Crystal (10 or more).
+- **Meditate** when it has at least 2 Crystal and the dragon deck has
+  at least two cards, conserving Crystal for later turns.
+- **Build or bond** when direct prestige or useful long-term scoring
+  offers better value than gathering more Crystal.
+
+A feasible quest still takes priority. The Collector avoids buying a
+dragon it cannot deploy before the match ends and never meditates
+when its reserve is already occupied.
+
+**Meditation limitation:** In the existing engine, Meditation draws two
+unseen dragons and retains one by its index. Bots currently choose
+index zero. They do **not** look at the hidden deck order when deciding
+whether to meditate, and the rules have not been changed to let bots
+see the two cards before choosing.
+
+No card costs, ability strengths, scoring formulas, or save-file fields
+changed. The rest of the bots retain their strategies.
+
+To compare results with the validated v0.28 baseline:
+
+```bash
+git pull origin main
+python3 -m compileall -q dragon_realms app.py tests
+python3 -m pytest -q
+python3 -m dragon_realms.simulate --players 4 --games 500 --rounds 8
+```
+
+**v0.28 reference (500 games, seed 0, eight rounds):** Balanced 30.2%,
+Bonding 28.0%, Builder 21.4%, Collector 20.4%. Collector averaged 7.96
+Channel actions, 1.78 Recruit actions, zero Meditation actions, and
+50.56 prestige per match. The objective is to reduce unproductive
+Channel actions and use Meditation selectively without removing the
+Collector's distinct play style.
+
 ## Named dragon abilities and balance baseline (v0.28)
 
 Three collectible dragons now have distinct quest abilities in place
