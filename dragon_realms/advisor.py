@@ -112,11 +112,21 @@ def quest_previews(game: Game, pid: str) -> list[dict[str, Any]]:
                     "meets all requirements together."
                 )
 
+        reward = dict(card.reward)
+        if chosen:
+            for dragon in chosen:
+                resource = {
+                    "tide_bounty": "crystal",
+                    "grove_bounty": "aether",
+                }.get(game.cards[dragon.card_id].effect)
+                if resource:
+                    reward[resource] = reward.get(resource, 0) + 1
+
         previews.append({
             "uid": item.uid,
             "name": card.name,
             "requirement": dict(requirement),
-            "reward": dict(card.reward),
+            "reward": reward,
             "prestige": prestige,
             "ready": chosen is not None,
             "dragon_uids": (
