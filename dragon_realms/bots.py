@@ -252,6 +252,32 @@ def _collector_development(game: Game, pid: str, building):
     return None
 
 
+def _develop_team(game: Game, pid: str, strategy: str) -> str | None:
+    """Let other strategies acquire one useful dragon, without deck peeking."""
+    player = game.players[pid]
+    remaining = game.max_rounds - game.round
+    limits = {"balanced": 4, "bonding": 5, "builder": 4}
+    if (
+        strategy not in limits
+        or remaining < 3
+        or len(player.deployed) >= limits[strategy]
+        or player.reserve
+        or len(game.decks["dragon"]) < 2
+        or player.resources["crystal"] < 2
+    ):
+        return None
+    if strategy == "builder":
+        # Builders prioritize affordable construction unless the
+        # blueprint market has nothing viable.
+        if _best_building(game, pid) is not None:
+            return None
+    elif strategy == "balanced":
+        if player.resources["crystal"] < 5:
+            return None
+    game.act(pid, "meditate", keep=0)
+    return "meditate"
+
+
 def choose_action(game: Game, pid: str, strategy: str) -> str:
     """Choose legal actions while balancing quest and setup value."""
     player = game.players[pid]
@@ -289,6 +315,12 @@ def choose_action(game: Game, pid: str, strategy: str) -> str:
         ):
             game.act(pid, "bond", uid=dragon.uid)
             return "bond"
+
+    # A partially filled team can benefit from a cheap new dragon.
+    # Quest completion and Builder's valuable investments still lead.
+    development = _develop_team(game, pid, strategy)
+    if development is not None:
+        return development
 
     if strategy in ("balanced", "builder") and building is not None:
         game.act(pid, "build", uid=building.uid)
