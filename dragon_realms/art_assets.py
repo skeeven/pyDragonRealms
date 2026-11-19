@@ -73,8 +73,6 @@ def dragon_art_html(
         return dragon_svg(element, size, variant)
     src = _cached_image(str(path), path.stat().st_mtime_ns)
     title = escape(f"{element} dragon illustration", quote=True)
-    height = size * 3 // 2 if portrait else size
-    ratio = "2/3" if portrait else "1/1"
     if portrait:
         return (
             f'<img src="{src}" alt="{title}" loading="lazy" '
