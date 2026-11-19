@@ -1,7 +1,7 @@
 """Phase 1 regressions for v0.30-v0.33 gameplay upgrades."""
 
-from dataclasses import replace
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -232,3 +232,57 @@ def test_trade_phase_may_be_skipped_safely():
     game.begin_actions()
     assert game.phase == Phase.ACTIONS
     assert game.scores() == scores
+
+
+def test_trade_phase_ui_is_optional_and_bots_do_not_leak_resources():
+    """Streamlit exposes a trade phase without showing rival balances."""
+    import ast
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    ui = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "trade_screen"
+    )
+    segment = ast.get_source_segment(source, ui)
+    assert "bot_accepts_trade(" in segment
+    assert "game.accept_trade(" in segment
+    assert "game.reject_trade(" in segment
+    assert "game.begin_actions()" in segment
+    assert "game.players[bot].resources" not in segment
+    assert "Phase.TRADE" in source
+
+
+def test_meditation_ui_reveals_both_options():
+    """Interactive choice must use two distinct game-generated instances."""
+    import ast
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    ui = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "meditation_choice"
+    )
+    segment = ast.get_source_segment(source, ui)
+    assert "game.pending_meditations[HUMAN]" in segment
+    assert "game.resolve_meditation(HUMAN, index)" in segment
+    assert "dragon_art_html(" in segment
+    assert "portrait=True" in segment
+
+
+def test_meditation_pending_prevents_deployment():
+    """The game engine must not bypass a pending reveal via deployment."""
+    game = ready_match()
+    available = game._instance("dragon_stone_2")
+    game.players["You"].reserve.append(available)
+    game.offer_meditation("You")
+    with pytest.raises(RuleError):
+        game.deploy("You", available.uid)
