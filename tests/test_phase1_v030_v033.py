@@ -353,3 +353,25 @@ def test_bot_counteroffer_respects_player_supply():
     assert bot_counteroffer(
         game, "Bot-A", "You", "ember", "crystal", 1, 1
     ) is None
+
+
+def test_auction_bid_total_updates_without_form_submit():
+    """Bid widgets rerun immediately while resolving remains explicit."""
+    import ast
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1] / "app.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    screen = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "market_screen"
+    )
+    segment = ast.get_source_segment(source, screen)
+    assert "st.number_input(" in segment
+    assert "total = sum(bids.values())" in segment
+    assert 'st.button(' in segment
+    assert 'with st.form(' not in segment
+    assert 'st.form_submit_button(' not in segment
