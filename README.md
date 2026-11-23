@@ -89,13 +89,17 @@ and nerfs.
 
 ### v0.33 — Trade council and multiplayer foundation
 
-After the sealed auction, the Streamlit game now offers an **optional
-Trade council** before deployment. The human can propose a one-for-one
-swap of 1 or 2 Crystal, Ember, or Aether with a computer Warden.
-Bots automatically accept only resource swaps that improve their
-supply mix; rejected offers leave resources unchanged. You can
+After the sealed auction, the Streamlit game offers an **optional
+Trade council** before deployment. You may offer 1–3 of one resource
+for 1–2 of another resource. The bot evaluates its resource needs,
+including the importance of Crystal, and can accept, reject or make
+a **counteroffer** with different quantities. You can explicitly
+accept or decline the counteroffer. For example, a bot with spare
+Crystal may ask for 2 Ember in exchange for 1 Crystal.
+A bot without enough Crystal cannot promise it in a trade.
+All trades use the existing atomic engine validation. You can
 skip negotiations and continue into the existing deployment/actions
-phase. Other players' resource totals are not displayed.
+phase. Other players' exact resource totals are not displayed.
 
 The underlying engine already supports bilateral trades involving
 cards and resources between human-controlled seats, but **a
