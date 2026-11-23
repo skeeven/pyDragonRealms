@@ -188,6 +188,151 @@ st.markdown(
     }
     .empty-slot {border-style: dashed; opacity: .5;}
     .empty-slot span {font-size: 1.6rem;}
+    /* One compact, persistent command center: never two copies of
+       the dragon squad or resource counters in the scroll area. */
+    div.st-key-command_center {
+        position: sticky;
+        top: 2.7rem;
+        z-index: 90;
+        background: #101923;
+        border: 1px solid #35536a;
+        border-radius: 13px;
+        padding: 9px 12px 7px;
+        box-shadow: 0 10px 25px #0009;
+    }
+    div.st-key-command_center div[data-testid="stMarkdownContainer"] p {
+        margin: 0;
+    }
+    .command-center {
+        display: grid;
+        grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.4fr);
+        gap: 12px;
+        color: #e9f2fb;
+    }
+    .command-summary {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+    .command-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 9px;
+        font-size: .89rem;
+        font-weight: 750;
+    }
+    .command-round {
+        color: #a6c1d6;
+        font-weight: 500;
+        font-size: .70rem;
+        white-space: nowrap;
+    }
+    .command-metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+    }
+    .command-metric {
+        background: #1a3043;
+        border: 1px solid #31506a;
+        border-radius: 7px;
+        padding: 4px 2px;
+        text-align: center;
+        min-width: 0;
+    }
+    .command-metric-label {
+        display: block;
+        font-size: .64rem;
+        white-space: nowrap;
+        color: #c2d4e5;
+    }
+    .command-metric-value {
+        display: block;
+        font-weight: 750;
+        font-size: .98rem;
+        line-height: 1.1;
+    }
+    .command-squad {
+        min-width: 0;
+    }
+    .command-squad-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-weight: 650;
+        font-size: .75rem;
+        margin-bottom: 4px;
+    }
+    .command-slots {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 5px;
+    }
+    .command-dragon {
+        min-width: 0;
+        height: 84px;
+        padding: 4px 3px;
+        border-radius: 8px;
+        border: 1px solid var(--dragon-line, #46617a);
+        border-top: 2px solid var(--dragon-line, #46617a);
+        background: #152838;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+        text-align: center;
+        overflow: hidden;
+    }
+    .command-dragon img, .command-dragon svg {
+        display: block;
+        max-width: 100%;
+        max-height: 40px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+    }
+    .command-dragon-name {
+        color: #f2f7fc;
+        font-weight: 700;
+        font-size: .66rem;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    .command-dragon-meta {
+        font-size: .63rem;
+        color: #c8dae8;
+        white-space: nowrap;
+    }
+    .command-dragon.is-resting {
+        opacity: .65;
+    }
+    .command-dragon.is-empty {
+        border-style: dashed;
+        color: #839bad;
+        font-size: 1.1rem;
+    }
+    @media (max-width: 900px) {
+        div.st-key-command_center {top: 2.5rem; padding: 7px;}
+        .command-center {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 7px;
+        }
+        .command-dragon {height: 67px;}
+        .command-dragon img, .command-dragon svg {max-height: 26px;}
+        .command-heading {font-size: .8rem;}
+    }
+    @media (max-width: 450px) {
+        .command-metric-label {font-size: .56rem;}
+        .command-metric-value {font-size: .85rem;}
+        .command-dragon-name {font-size: .57rem;}
+        .command-dragon-meta {font-size: .54rem;}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -215,6 +360,86 @@ ABILITY_SHORT = {
     "tide_bounty": "+1 Crystal / quest",
     "grove_bounty": "+1 Aether / quest",
 }
+
+
+def command_center_html(game: Game, pid: str) -> str:
+    """Render live resources and five deployed dragons in a small HUD."""
+    player = game.players[pid]
+    phase = {
+        Phase.MARKET: "Acquire",
+        Phase.TRADE: "Negotiate",
+        Phase.ACTIONS: "Take actions",
+        Phase.GATHER: "Gather",
+        Phase.END: "End round",
+        Phase.FINISHED: "Finished",
+    }.get(game.phase, game.phase.value.title())
+    stats = (
+        ("💎", "Crystal", player.resources["crystal"]),
+        ("🔥", "Ember", player.resources["ember"]),
+        ("✨", "Aether", player.resources["aether"]),
+        ("🏆", "Prestige", game.score(pid)),
+        ("⚔️", "Actions", player.actions_left),
+    )
+    metrics = "".join(
+        '<div class="command-metric">'
+        f'<span class="command-metric-label">{icon} {name}</span>'
+        f'<span class="command-metric-value">{value}</span>'
+        '</div>'
+        for icon, name, value in stats
+    )
+    slots = []
+    for dragon in player.deployed[:5]:
+        card = game.cards[dragon.card_id]
+        palette = PALETTES.get(card.element)
+        color = palette[0] if palette else "#46617a"
+        ability = ABILITY_SHORT.get(card.effect, "No special ability")
+        tooltip = escape(
+            f"{card.name} · {card.element} · "
+            f"Power {card.power + dragon.bond} · "
+            f"Prestige {card.prestige} · Bond {dragon.bond} · "
+            f"{ability}" +
+            (" · Resting" if dragon.exhausted else ""),
+            quote=True,
+        )
+        resting = " is-resting" if dragon.exhausted else ""
+        art = dragon_art_html(card.id, card.element, 72)
+        slots.append(
+            f'<div class="command-dragon{resting}" '
+            f'style="--dragon-line:{color}" title="{tooltip}">'
+            f'{art}'
+            f'<span class="command-dragon-name">'
+            f'{escape(card.name)}</span>'
+            f'<span class="command-dragon-meta">'
+            f'⚔{card.power + dragon.bond} '
+            f'🏆{card.prestige} '
+            f'🤝{dragon.bond}'
+            f'{" 💤" if dragon.exhausted else ""}'
+            '</span></div>'
+        )
+    slots.extend(
+        '<div class="command-dragon is-empty" '
+        'aria-label="Empty dragon slot">＋</div>'
+        for _ in range(max(0, 5 - len(slots)))
+    )
+    return (
+        '<section class="command-center" '
+        'aria-label="Dragon Realms command center">'
+        '<div class="command-summary">'
+        '<div class="command-heading">'
+        '<span>🐉 Dragon Realms</span>'
+        f'<span class="command-round">Round '
+        f'{game.round}/{game.max_rounds} · {escape(phase)}</span>'
+        '</div>'
+        f'<div class="command-metrics">{metrics}</div>'
+        '</div>'
+        '<div class="command-squad">'
+        '<div class="command-squad-heading">'
+        '<span>🛡️ Active dragons</span>'
+        f'<span>{len(player.deployed)}/5</span>'
+        '</div>'
+        f'<div class="command-slots">{"".join(slots)}</div>'
+        '</div></section>'
+    )
 
 
 def show_dragon_slots(game: Game, dragons, slots: int) -> None:
@@ -1240,24 +1465,11 @@ def main() -> None:
     game = st.session_state.game
     player = game.players[HUMAN]
 
-    st.markdown(
-        '<div class="game-title">🐉 Dragon Realms</div>',
-        unsafe_allow_html=True,
-    )
-    st.progress(
-        game.round / game.max_rounds,
-        text=(f"Round {game.round}/{game.max_rounds} · "
-              f"{game.phase.value.title()}"),
-    )
-    metric_columns = st.columns(5)
-    for column, (name, value) in zip(metric_columns, [
-        ("💎 Crystal", player.resources["crystal"]),
-        ("🔥 Ember", player.resources["ember"]),
-        ("✨ Aether", player.resources["aether"]),
-        ("🏆 Prestige", game.score(HUMAN)),
-        ("⚔️ Actions", player.actions_left),
-    ]):
-        column.metric(name, value)
+    with st.container(key="command_center"):
+        st.markdown(
+            command_center_html(game, HUMAN),
+            unsafe_allow_html=True,
+        )
 
     scores = sorted(
         game.scores().items(), key=lambda pair: -pair[1]
@@ -1279,12 +1491,6 @@ def main() -> None:
 
     board, decisions = st.columns([1.25, 1], gap="medium")
     with board:
-        st.markdown("#### 🛡️ Active dragons · 5 slots")
-        st.caption(
-            "Deployed dragons contribute prestige, synergy and "
-            "quest power. Exhausted dragons recover next round."
-        )
-        show_dragon_slots(game, player.deployed, 5)
         st.markdown(
             f"#### 🃏 Reserve · {len(player.reserve)} inactive"
         )
