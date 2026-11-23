@@ -475,41 +475,62 @@ def market_screen(game: Game) -> None:
         "Bid 0 to pass or at least 2 Crystal for dragons "
         "(3 for relics). Win up to 2 cards; pay only if you win."
     )
-    with st.form(f"market_{game.round}"):
-        submitted = st.form_submit_button(
-            "⚔️ Resolve auction", type="primary",
-            use_container_width=True,
+    # Inputs live outside a form so Streamlit reruns immediately
+    # when a bid changes; the auction still resolves only on click.
+    columns = st.columns(2, gap="small")
+    bids = {}
+    for index, item in enumerate(game.market):
+        column = columns[index % len(columns)]
+        card = game.cards[item.card_id]
+        minimum = 3 if card.kind == "relic" else 2
+        with column:
+            st.markdown(
+                market_card_html(game, item),
+                unsafe_allow_html=True,
+            )
+            bids[item.uid] = st.number_input(
+                f"Bid for {card.name} (0 or {minimum}+)",
+                min_value=0,
+                max_value=player.resources["crystal"],
+                value=0,
+                step=1,
+                label_visibility="collapsed",
+                key=f"bid_{game.round}_{item.uid}",
+                help=(
+                    f"Bid 0 to pass, or at least "
+                    f"{minimum} Crystal."
+                ),
+            )
+    total = sum(bids.values())
+    budget = player.resources["crystal"]
+    invalid_bids = [
+        (game.cards[item.card_id].name, bids[item.uid])
+        for item in game.market
+        if 0 < bids[item.uid] < (
+            3 if game.cards[item.card_id].kind == "relic" else 2
         )
-        columns = st.columns(2, gap="small")
-        bids = {}
-        for index, item in enumerate(game.market):
-            column = columns[index % len(columns)]
-            card = game.cards[item.card_id]
-            minimum = 3 if card.kind == "relic" else 2
-            with column:
-                st.markdown(
-                    market_card_html(game, item),
-                    unsafe_allow_html=True,
-                )
-                bids[item.uid] = st.number_input(
-                    f"Bid for {card.name} (0 or {minimum}+)",
-                    min_value=0,
-                    max_value=player.resources["crystal"],
-                    value=0,
-                    step=1,
-                    label_visibility="collapsed",
-                    key=f"bid_{game.round}_{item.uid}",
-                    help=(
-                        f"Bid 0 to pass, or at least "
-                        f"{minimum} Crystal."
-                    ),
-                )
-        total = sum(bids.values())
+    ]
+    if total > budget:
+        st.error(
+            f"💎 Your bids: {total} / {budget} Crystal · "
+            f"Over budget by {total - budget}."
+        )
+    else:
         st.caption(
-            f"💎 Your bids: {total} / "
-            f"{player.resources['crystal']} Crystal · "
+            f"💎 Your bids: {total} / {budget} Crystal · "
             "Maximum 2 cards won."
         )
+    if invalid_bids:
+        st.warning(
+            "A bid must be zero or at least 2 Crystal "
+            "(3 for relics)."
+        )
+    submitted = st.button(
+        "⚔️ Resolve auction",
+        type="primary",
+        use_container_width=True,
+        disabled=total > budget or bool(invalid_bids),
+    )
     if not submitted:
         return
     if total > player.resources["crystal"]:
