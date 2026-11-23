@@ -34,7 +34,7 @@ from dragon_realms.history import leaderboard, match_history
 from dragon_realms.presentation import action_feedback
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
-from dragon_realms.trade_ai import bot_accepts_trade
+from dragon_realms.trade_ai import (\n    bot_accepts_trade,\n    bot_counteroffer,\n)
 
 HUMAN = "You"
 BOTS = {
@@ -567,55 +567,130 @@ def market_screen(game: Game) -> None:
 
 
 def trade_screen(game: Game) -> None:
-    """Offer an optional resource trade to a computer Warden."""
-    st.markdown("**🤝 Trade council · Optional negotiations**")
+    """Make offers and respond to bot counteroffers in the Trade council."""
+    st.markdown("**🤝 Trade council · Negotiate with a Warden**")
     st.caption(
-        "Offer 1 or 2 of one resource for the same amount of another. "
-        "Bots accept only trades that improve their resource mix. "
-        "Their resource totals remain private."
+        "Offer Ember or Aether to obtain Crystal, or swap other resources. "
+        "Bots may accept, decline, or propose different quantities. "
+        "Their exact supplies remain private."
     )
-    with st.form(f"trade_{game.round}"):
-        bot = st.selectbox("Trade with", list(BOTS))
-        offered = st.selectbox(
-            "You offer", ["crystal", "ember", "aether"]
+    pending = st.session_state.get("trade_counter")
+    if pending and pending["round"] != game.round:
+        st.session_state.trade_counter = None
+        pending = None
+
+    if pending:
+        st.info(
+            f"🤝 **{pending['bot']} counters:** Give "
+            f"{pending['give_amount']} "
+            f"{pending['offered'].title()} for "
+            f"{pending['get_amount']} "
+            f"{pending['requested'].title()}. "
+            "Accept these terms or decline."
         )
-        requested = st.selectbox(
-            "You request", [
-                key for key in ("crystal", "ember", "aether")
-                if key != offered
-            ]
-        )
-        amount = st.selectbox("Quantity of each", [1, 2])
-        submitted = st.form_submit_button("Propose trade")
-    if submitted:
-        try:
-            trade_id = game.propose_trade(
-                HUMAN, bot,
-                {"resources": {offered: amount}},
-                {"resources": {requested: amount}},
+        accept_col, decline_col = st.columns(2)
+        with accept_col:
+            if st.button(
+                "Accept counteroffer", type="primary",
+                use_container_width=True,
+            ):
+                try:
+                    trade_id = game.propose_trade(
+                        HUMAN, pending["bot"],
+                        {"resources": {
+                            pending["offered"]: pending["give_amount"]
+                        }},
+                        {"resources": {
+                            pending["requested"]: pending["get_amount"]
+                        }},
+                    )
+                    game.accept_trade(pending["bot"], trade_id)
+                except RuleError as exc:
+                    st.error(str(exc))
+                else:
+                    st.session_state.trade_counter = None
+                    st.session_state.notice = (
+                        f"🤝 Agreed! Traded {pending['give_amount']} "
+                        f"{pending['offered'].title()} for "
+                        f"{pending['get_amount']} "
+                        f"{pending['requested'].title()}."
+                    )
+                    st.session_state.notice_kind = "success"
+                    st.rerun()
+        with decline_col:
+            if st.button(
+                "Decline counteroffer", use_container_width=True
+            ):
+                st.session_state.trade_counter = None
+                st.rerun()
+    else:
+        with st.form(f"trade_{game.round}"):
+            bot = st.selectbox("Trade with", list(BOTS))
+            offered = st.selectbox(
+                "You offer", ["crystal", "ember", "aether"]
             )
-            trade = game.trades[trade_id]
-            if bot_accepts_trade(game, bot, trade):
-                game.accept_trade(bot, trade_id)
-                st.session_state.notice = (
-                    f"🤝 {bot} accepted: traded {amount} "
-                    f"{offered.title()} for {amount} "
-                    f"{requested.title()}."
+            requested = st.selectbox(
+                "You request", [
+                    resource
+                    for resource in ("crystal", "ember", "aether")
+                    if resource != offered
+                ]
+            )
+            offered_amount = st.selectbox(
+                "Amount you offer", [1, 2, 3]
+            )
+            requested_amount = st.selectbox(
+                "Amount you request", [1, 2]
+            )
+            submitted = st.form_submit_button("Propose trade")
+        if submitted:
+            try:
+                trade_id = game.propose_trade(
+                    HUMAN, bot,
+                    {"resources": {offered: offered_amount}},
+                    {"resources": {requested: requested_amount}},
                 )
-                st.session_state.notice_kind = "success"
-            else:
-                game.reject_trade(bot, trade_id)
-                st.session_state.notice = (
-                    f"{bot} declined the offer. "
-                    "Try another trade or continue."
-                )
-                st.session_state.notice_kind = "info"
-            st.rerun()
-        except RuleError as exc:
-            st.error(str(exc))
+                trade = game.trades[trade_id]
+                accepted = bot_accepts_trade(game, bot, trade)
+                if accepted:
+                    game.accept_trade(bot, trade_id)
+                    st.session_state.notice = (
+                        f"🤝 {bot} accepted! Gave "
+                        f"{offered_amount} {offered.title()} for "
+                        f"{requested_amount} {requested.title()}."
+                    )
+                    st.session_state.notice_kind = "success"
+                else:
+                    game.reject_trade(bot, trade_id)
+                    counter = bot_counteroffer(
+                        game, bot, HUMAN, offered, requested,
+                        offered_amount, requested_amount,
+                    )
+                    if counter:
+                        give_amount, get_amount = counter
+                        st.session_state.trade_counter = {
+                            "round": game.round,
+                            "bot": bot,
+                            "offered": offered,
+                            "requested": requested,
+                            "give_amount": give_amount,
+                            "get_amount": get_amount,
+                        }
+                    else:
+                        st.session_state.notice = (
+                            f"{bot} declined this trade and has no "
+                            "acceptable counteroffer right now. "
+                            "Try a different Warden or resource."
+                        )
+                        st.session_state.notice_kind = "info"
+                st.rerun()
+            except RuleError as exc:
+                st.error(str(exc))
+
     if st.button(
         "Continue to deployment", type="primary",
         use_container_width=True,
+        disabled=bool(st.session_state.get("trade_counter")),
     ):
         try:
             game.begin_actions()
@@ -624,6 +699,7 @@ def trade_screen(game: Game) -> None:
         except RuleError as exc:
             st.error(str(exc))
         else:
+            st.session_state.trade_counter = None
             st.session_state.notice = (
                 "Trade council closed. Deploy your dragons."
             )
