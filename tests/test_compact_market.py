@@ -38,20 +38,31 @@ def test_market_uses_compact_card_helper():
     assert not calls_named(market, "card_panel")
 
 
-def test_resolve_button_precedes_bid_inputs():
-    """The primary auction action is accessible above all four bids."""
+def test_resolve_button_follows_live_bid_validation():
+    """Live bids update before the full-width Resolve button is enabled."""
     market = get_function("market_screen")
-    submit = calls_named(market, "form_submit_button")
+    buttons = calls_named(market, "button")
     inputs = calls_named(market, "number_input")
-    assert len(submit) == 1
+    assert len(buttons) == 1
     assert len(inputs) == 1
-    assert submit[0].lineno < inputs[0].lineno
+    assert inputs[0].lineno < buttons[0].lineno
+    assert not calls_named(market, "form_submit_button")
     assert any(
         keyword.arg == "use_container_width"
         and isinstance(keyword.value, ast.Constant)
         and keyword.value.value is True
-        for keyword in submit[0].keywords
+        for keyword in buttons[0].keywords
     )
+    disabled = next(
+        keyword.value for keyword in buttons[0].keywords
+        if keyword.arg == "disabled"
+    )
+    assert isinstance(disabled, ast.BoolOp)
+    source = ast.get_source_segment(
+        APP_PATH.read_text(encoding="utf-8"), market
+    )
+    assert "total = sum(bids.values())" in source
+    assert "disabled=total > budget or bool(invalid_bids)" in source
 
 
 def test_market_bidding_still_has_validation_and_bots():
