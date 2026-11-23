@@ -10,7 +10,10 @@ from dragon_realms.balance import balance_report, catalog_audit
 from dragon_realms.bots import choose_action
 from dragon_realms.engine import Game, Phase, RuleError
 from dragon_realms.savegame import export_game, import_game
-from dragon_realms.trade_ai import bot_accepts_trade
+from dragon_realms.trade_ai import (
+    bot_accepts_trade,
+    bot_counteroffer,
+)
 
 
 def ready_match():
@@ -286,3 +289,67 @@ def test_meditation_pending_prevents_deployment():
     game.offer_meditation("You")
     with pytest.raises(RuleError):
         game.deploy("You", available.uid)
+
+
+def test_bot_accepts_two_ember_for_one_crystal():
+    """A sufficiently attractive offer can obtain scarce Crystal."""
+    game = trade_match()
+    game.players["You"].resources["ember"] = 10
+    game.players["Bot-A"].resources.update({
+        "crystal": 2, "ember": 3, "aether": 3,
+    })
+    trade_id = game.propose_trade(
+        "You", "Bot-A",
+        {"resources": {"ember": 2}},
+        {"resources": {"crystal": 1}},
+    )
+    trade = game.trades[trade_id]
+    assert bot_accepts_trade(game, "Bot-A", trade)
+    game.accept_trade("Bot-A", trade_id)
+    assert game.players["You"].resources["crystal"] >= 1
+    assert game.players["Bot-A"].resources["crystal"] == 1
+    assert game.players["Bot-A"].resources["ember"] == 5
+
+
+def test_bot_counters_one_ember_for_one_crystal():
+    """Bot offers fairer quantities instead of a silent rejection."""
+    game = trade_match()
+    game.players["You"].resources["ember"] = 10
+    game.players["Bot-A"].resources.update({
+        "crystal": 2, "ember": 3, "aether": 3,
+    })
+    proposal = game.propose_trade(
+        "You", "Bot-A",
+        {"resources": {"ember": 1}},
+        {"resources": {"crystal": 1}},
+    )
+    assert not bot_accepts_trade(
+        game, "Bot-A", game.trades[proposal]
+    )
+    game.reject_trade("Bot-A", proposal)
+    assert bot_counteroffer(
+        game, "Bot-A", "You", "ember", "crystal", 1, 1
+    ) == (2, 1)
+
+
+def test_bot_cannot_counter_with_unavailable_crystal():
+    """Counteroffers cannot promise resources the Warden does not own."""
+    game = trade_match()
+    game.players["Bot-A"].resources.update({
+        "crystal": 0, "ember": 3, "aether": 3,
+    })
+    assert bot_counteroffer(
+        game, "Bot-A", "You", "ember", "crystal", 1, 1
+    ) is None
+
+
+def test_bot_counteroffer_respects_player_supply():
+    """A proposed exchange must fit the human player's inventory."""
+    game = trade_match()
+    game.players["You"].resources["ember"] = 1
+    game.players["Bot-A"].resources.update({
+        "crystal": 1, "ember": 3, "aether": 3,
+    })
+    assert bot_counteroffer(
+        game, "Bot-A", "You", "ember", "crystal", 1, 1
+    ) is None
