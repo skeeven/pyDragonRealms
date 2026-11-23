@@ -34,7 +34,10 @@ from dragon_realms.history import leaderboard, match_history
 from dragon_realms.presentation import action_feedback
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
-from dragon_realms.trade_ai import (\n    bot_accepts_trade,\n    bot_counteroffer,\n)
+from dragon_realms.trade_ai import (
+    bot_accepts_trade,
+    bot_counteroffer,
+)
 
 HUMAN = "You"
 BOTS = {
@@ -273,6 +276,7 @@ def start_game(seed: int, rounds: int = 8) -> None:
         "prestige by completing quests and building your realm."
     )
     st.session_state.auction = []
+    st.session_state.trade_counter = None
     st.session_state.notice_kind = "info"
 
 
