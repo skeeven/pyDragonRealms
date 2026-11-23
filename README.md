@@ -48,6 +48,32 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## v0.34 — Sticky game command center
+
+The Streamlit board now keeps a compact **command center** visible while
+scrolling. It contains the round/phase, live Crystal, Ember, Aether,
+Prestige and remaining actions, plus **five active dragon slots** using
+the existing artwork. Each dragon shows quest power, prestige, bond
+level, and resting status; more details appear in its tooltip.
+
+The previous duplicate Active Dragons panel has been removed from the
+scrolling column. Reserve dragons, buildings, relics, Codex and game
+decisions remain in the scrolling area. At narrow browser widths the
+command center stacks into a more compact two-row layout.
+
+The command center is display-only: it does not change the engine,
+actions, bidding, scores, or save format. The v0.34 regression tests
+verify the new structure, but **browser validation of sticky behavior
+and mobile sizing is still required**.
+
+```bash
+git pull origin main
+python3 -m pytest -q
+streamlit run app.py
+```
+
+---
+
 ## Phase 1 gameplay completion (v0.30–v0.33)
 
 The four milestones below improve the core rules and opponent
