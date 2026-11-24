@@ -70,7 +70,9 @@ def test_two_row_layout_and_dragons_are_contained():
     """The active-card height fits within padded sticky HUD borders."""
     source = APP.read_text(encoding="utf-8")
     assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in source
-    assert "grid-template-rows: repeat(2, minmax(0, 1fr))" in source
+    assert "grid-template-rows: repeat(2, minmax(42px, auto))" in source
+    assert "min-height: 154px;" in source
+    assert "min-height: 128px;" in source
     assert ".command-dragon {" in source
     assert "height: 76px;" in source
     assert "box-sizing: border-box;" in source
