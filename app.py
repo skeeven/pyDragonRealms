@@ -202,7 +202,8 @@ st.markdown(
         background: #101923;
         border: 1px solid #35536a;
         border-radius: 13px;
-        padding: 10px 12px;
+        padding: 12px 12px;
+        min-height: 154px;
         box-shadow: 0 10px 25px #0009;
         box-sizing: border-box;
         overflow: hidden;
@@ -215,6 +216,7 @@ st.markdown(
         grid-template-columns: minmax(285px, 0.85fr) minmax(0, 1.5fr);
         gap: 16px;
         align-items: center;
+        min-height: 128px;
         min-width: 0;
         color: #e9f2fb;
     }
@@ -223,7 +225,7 @@ st.markdown(
         display: flex;
         flex-direction: column;
         gap: 6px;
-        align-self: stretch;
+        align-self: center;
         justify-content: center;
     }
     .command-heading {
@@ -243,7 +245,7 @@ st.markdown(
     .command-metrics {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        grid-template-rows: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(42px, auto));
         gap: 5px;
     }
     .command-metric {
@@ -339,9 +341,14 @@ st.markdown(
         font-size: 1.1rem;
     }
     @media (max-width: 900px) {
-        div.st-key-command_center {top: 2.5rem; padding: 7px;}
+        div.st-key-command_center {
+            top: 2.5rem;
+            min-height: 0;
+            padding: 9px;
+        }
         .command-center {
             grid-template-columns: minmax(0, 1fr);
+            min-height: 0;
             gap: 7px;
         }
         .command-dragon {height: 65px;}
