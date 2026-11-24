@@ -50,6 +50,14 @@ Compare the new action mix and scores before changing card rules.
 
 ## v0.35 — Command bar polish and live placing
 
+**Scrolling fix:** Streamlit wraps `st.container` inside an outer
+element. Applying `position: sticky` only to the inner keyed container
+caused the entire bar to scroll away. The sticky rule now targets
+Streamlit's outer element wrapper (with `:has()`), allowing the bar
+to remain pinned while the page beneath it scrolls. Confirm this in
+the browser, as automated structure tests cannot verify actual
+scroll positioning.
+
 The sticky command center now uses a **two-row, three-column grid**
 for six compact status tiles: Crystal, Ember, Aether, Prestige,
 remaining Actions and **Placing**. The placing tile derives its
