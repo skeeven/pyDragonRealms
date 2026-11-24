@@ -48,6 +48,34 @@ The v0.11 baseline (200 games, seed 0, eight rounds) was Balanced
 average score was 41.73 and its average quest prestige was 12.07.
 Compare the new action mix and scores before changing card rules.
 
+## v0.35 — Command bar polish and live placing
+
+The sticky command center now uses a **two-row, three-column grid**
+for six compact status tiles: Crystal, Ember, Aether, Prestige,
+remaining Actions and **Placing**. The placing tile derives its
+rank from the same four criteria as the match's victory ranking:
+prestige, quests completed, total bonds, and remaining Crystal.
+Exact ties display as `T-1st`, `T-2nd`, and so on.
+
+The five Active Dragon mini-cards have a reduced height and explicit
+border-box sizing, while their container has more interior padding
+and clips accidental overflow. A responsive layout retains five
+slots on one row where space allows and stacks the summary above
+the dragon squad on narrow screens. Dragon details are available
+from the card's hover tooltip.
+
+The changes affect **presentation only**; engine rules and the
+save format remain unchanged. CSS fit and scrolling behavior
+should still be verified in a live browser.
+
+```bash
+git pull origin main
+python3 -m pytest -q
+streamlit run app.py
+```
+
+---
+
 ## v0.34 — Sticky game command center
 
 The Streamlit board now keeps a compact **command center** visible while
