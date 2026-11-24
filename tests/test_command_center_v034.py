@@ -64,6 +64,21 @@ def test_hud_is_sticky_and_responsive():
     assert "@media (max-width: 450px)" in source
 
 
+def test_sticky_attaches_to_streamlit_outer_wrapper():
+    """Inner widgets cannot stick beyond their one-widget-high parents."""
+    source = app_source()
+    assert (
+        'div[data-testid="stElementContainer"]:has(.st-key-command_center)'
+        in source
+    )
+    assert "position: sticky !important;" in source
+    assert (
+        "div[data-testid=\"stVerticalBlock\"]" in source
+    )
+    assert "div.st-key-command_center {\n        position: relative;" in source
+    assert "z-index: 100;" in source
+
+
 def test_active_squad_is_not_duplicated_below_header():
     """The reserve and gameplay panels scroll, without a second squad."""
     main = function_source("main")
