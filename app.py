@@ -193,12 +193,28 @@ st.markdown(
     }
     .empty-slot {border-style: dashed; opacity: .5;}
     .empty-slot span {font-size: 1.6rem;}
-    /* One compact, persistent command center: never two copies of
-       the dragon squad or resource counters in the scroll area. */
-    div.st-key-command_center {
-        position: sticky;
+    /* Streamlit wraps st.container in an element container. Sticky
+       positioning must attach to that outer wrapper: applying it only
+       to the keyed inner div traps it inside a one-widget-high parent.
+       :has() is supported by modern Chrome, Safari and Firefox. */
+    div[data-testid="stVerticalBlock"]
+        > div[data-testid="stElementContainer"]:has(.st-key-command_center) {
+        position: sticky !important;
         top: 2.7rem;
-        z-index: 90;
+        z-index: 100;
+        align-self: stretch;
+    }
+    /* Some Streamlit releases use another direct wrapper instead of
+       stElementContainer; keep a scoped fallback for that markup. */
+    div[data-testid="stVerticalBlock"]
+        > div:has(> div.st-key-command_center) {
+        position: sticky !important;
+        top: 2.7rem;
+        z-index: 100;
+    }
+    /* Visual styling remains on the keyed container itself. */
+    div.st-key-command_center {
+        position: relative;
         background: #101923;
         border: 1px solid #35536a;
         border-radius: 13px;
@@ -341,8 +357,13 @@ st.markdown(
         font-size: 1.1rem;
     }
     @media (max-width: 900px) {
-        div.st-key-command_center {
+        div[data-testid="stVerticalBlock"]
+            > div[data-testid="stElementContainer"]:has(.st-key-command_center),
+        div[data-testid="stVerticalBlock"]
+            > div:has(> div.st-key-command_center) {
             top: 2.5rem;
+        }
+        div.st-key-command_center {
             min-height: 0;
             padding: 9px;
         }
