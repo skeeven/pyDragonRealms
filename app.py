@@ -30,7 +30,12 @@ from dragon_realms.engine import (
     Phase,
     RuleError,
 )
-from dragon_realms.history import leaderboard, match_history
+from dragon_realms.history import (
+    current_placement,
+    leaderboard,
+    match_history,
+    placement_label,
+)
 from dragon_realms.presentation import action_feedback
 from dragon_realms.savegame import export_session, import_session
 from dragon_realms.simulate import _bid
@@ -197,23 +202,29 @@ st.markdown(
         background: #101923;
         border: 1px solid #35536a;
         border-radius: 13px;
-        padding: 9px 12px 7px;
+        padding: 10px 12px;
         box-shadow: 0 10px 25px #0009;
+        box-sizing: border-box;
+        overflow: hidden;
     }
     div.st-key-command_center div[data-testid="stMarkdownContainer"] p {
         margin: 0;
     }
     .command-center {
         display: grid;
-        grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.4fr);
-        gap: 12px;
+        grid-template-columns: minmax(285px, 0.85fr) minmax(0, 1.5fr);
+        gap: 16px;
+        align-items: center;
+        min-width: 0;
         color: #e9f2fb;
     }
     .command-summary {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 7px;
+        gap: 6px;
+        align-self: stretch;
+        justify-content: center;
     }
     .command-heading {
         display: flex;
@@ -231,16 +242,18 @@ st.markdown(
     }
     .command-metrics {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 4px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        gap: 5px;
     }
     .command-metric {
         background: #1a3043;
         border: 1px solid #31506a;
         border-radius: 7px;
-        padding: 4px 2px;
+        padding: 5px 3px;
         text-align: center;
         min-width: 0;
+        box-sizing: border-box;
     }
     .command-metric-label {
         display: block;
@@ -256,6 +269,9 @@ st.markdown(
     }
     .command-squad {
         min-width: 0;
+        align-self: center;
+        width: 100%;
+        box-sizing: border-box;
     }
     .command-squad-heading {
         display: flex;
@@ -268,12 +284,17 @@ st.markdown(
     .command-slots {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 5px;
+        gap: 6px;
+        min-width: 0;
+        width: 100%;
+        align-items: stretch;
     }
     .command-dragon {
         min-width: 0;
-        height: 84px;
-        padding: 4px 3px;
+        max-width: 100%;
+        height: 76px;
+        padding: 3px 3px;
+        box-sizing: border-box;
         border-radius: 8px;
         border: 1px solid var(--dragon-line, #46617a);
         border-top: 2px solid var(--dragon-line, #46617a);
@@ -289,7 +310,7 @@ st.markdown(
     .command-dragon img, .command-dragon svg {
         display: block;
         max-width: 100%;
-        max-height: 40px;
+        max-height: 33px;
         width: auto;
         height: auto;
         object-fit: contain;
@@ -323,11 +344,15 @@ st.markdown(
             grid-template-columns: minmax(0, 1fr);
             gap: 7px;
         }
-        .command-dragon {height: 67px;}
-        .command-dragon img, .command-dragon svg {max-height: 26px;}
+        .command-dragon {height: 65px;}
+        .command-dragon img, .command-dragon svg {max-height: 25px;}
         .command-heading {font-size: .8rem;}
     }
     @media (max-width: 450px) {
+        .command-center {gap: 6px;}
+        .command-squad-heading {font-size: .68rem;}
+        .command-dragon {height: 61px; padding: 2px;}
+        .command-dragon img, .command-dragon svg {max-height: 22px;}
         .command-metric-label {font-size: .56rem;}
         .command-metric-value {font-size: .85rem;}
         .command-dragon-name {font-size: .57rem;}
@@ -373,12 +398,14 @@ def command_center_html(game: Game, pid: str) -> str:
         Phase.END: "End round",
         Phase.FINISHED: "Finished",
     }.get(game.phase, game.phase.value.title())
+    rank, tied = current_placement(game, pid)
     stats = (
         ("💎", "Crystal", player.resources["crystal"]),
         ("🔥", "Ember", player.resources["ember"]),
         ("✨", "Aether", player.resources["aether"]),
         ("🏆", "Prestige", game.score(pid)),
         ("⚔️", "Actions", player.actions_left),
+        ("🥇", "Placing", placement_label(rank, tied)),
     )
     metrics = "".join(
         '<div class="command-metric">'
