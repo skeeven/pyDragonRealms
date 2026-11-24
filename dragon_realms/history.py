@@ -42,6 +42,30 @@ def leaderboard(game: Game) -> list[dict]:
     return entries
 
 
+
+def current_placement(game: Game, pid: str) -> tuple[int, bool]:
+    """Return one-based standing and whether another Warden shares it.
+
+    A tie uses the same score, quests, bonds and Crystal tie-breakers
+    as the victory ranking. Final tied places remain tied.
+    """
+    standings = leaderboard(game)
+    player = next(entry for entry in standings if entry["warden"] == pid)
+    tied = sum(
+        entry["ranking"] == player["ranking"] for entry in standings
+    ) > 1
+    return player["rank"], tied
+
+
+def placement_label(rank: int, tied: bool = False) -> str:
+    """Format a readable ordinal rank, including exact ties."""
+    suffix = (
+        "th" if rank % 100 in (11, 12, 13)
+        else {1: "st", 2: "nd", 3: "rd"}.get(rank % 10, "th")
+    )
+    return f"{'T-' if tied else ''}{rank}{suffix}"
+
+
 def match_history(game: Game) -> list[dict]:
     """Convert match events into readable, chronological highlights.
 
